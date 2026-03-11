@@ -396,7 +396,7 @@
 
         loginBtn.addEventListener('click', async () => {
             if(!supabase) {
-                alert("Questa funzione sarà attiva dopo aver inserito le chiavi Supabase nel file.");
+                alert("Si è verificato un errore di connessione con il database (Supabase non inizializzato).");
                 return;
             }
             
