@@ -511,37 +511,79 @@ function renderList() {
 
 function updateCharts() {
   const now = new Date();
-  const monthExp = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-  const catData = CAT_NAMES.map(c => monthExp.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0));
-  const chartColors = CAT_NAMES.map(c => CATEGORIES[c].chart);
-  document.getElementById('category-legend').innerHTML = CAT_NAMES.map((c, i) => {
+  Chart.defaults.font.family = "'Lato', sans-serif";
+  Chart.defaults.color = brandColors.medium;
+  const tooltipBase = { backgroundColor: 'rgba(26,35,50,0.95)', titleFont: { family: "'Poppins',sans-serif", size: 13, weight: 'bold' }, bodyFont: { family: "'Lato',sans-serif", size: 13 }, padding: 10, cornerRadius: 8 };
+
+  // --- Doughnut: monthly expense categories ---
+  const monthExp = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && !isIncome(e.category); });
+  const catData = EXPENSE_CATS.map(c => monthExp.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0));
+  const chartColors = EXPENSE_CATS.map(c => CATEGORIES[c].chart);
+  document.getElementById('category-legend').innerHTML = EXPENSE_CATS.map((c, i) => {
     const ci = CATEGORIES[c];
     return `<div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <div class="w-6 h-6 rounded-md ${ci.bg} ${ci.color} flex items-center justify-center">
-          <i data-lucide="${ci.icon}" class="w-3 h-3"></i>
-        </div>
+        <div class="w-6 h-6 rounded-md ${ci.bg} ${ci.color} flex items-center justify-center"><i data-lucide="${ci.icon}" class="w-3 h-3"></i></div>
         <span class="text-[13px] font-lato text-brand-medium">${c}</span>
       </div>
       <span class="text-[13px] font-poppins font-semibold text-brand-dark">${fmt(catData[i])}</span>
     </div>`;
   }).join('');
-  Chart.defaults.font.family = "'Lato', sans-serif";
-  Chart.defaults.color = brandColors.medium;
   if (categoryChart) categoryChart.destroy();
   categoryChart = new Chart(document.getElementById('categoryChart').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: CAT_NAMES, datasets: [{ data: catData, backgroundColor: chartColors, borderWidth: 2, borderColor: brandColors.cream, hoverOffset: 10 }] },
-    options: { plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(26,35,50,0.95)', titleFont: { family: "'Poppins',sans-serif", size: 13, weight: 'bold' }, bodyFont: { family: "'Lato',sans-serif", size: 13 }, padding: 10, cornerRadius: 8, callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed)}` } } }, cutout: '70%', animation: { animateScale: true, animateRotate: true } }
+    data: { labels: EXPENSE_CATS, datasets: [{ data: catData, backgroundColor: chartColors, borderWidth: 2, borderColor: brandColors.cream, hoverOffset: 10 }] },
+    options: { plugins: { legend: { display: false }, tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed)}` } } }, cutout: '70%', animation: { animateScale: true, animateRotate: true } }
   });
+
+  // --- Weekly spending bar ---
   const last7 = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0]; }).reverse();
-  const wkData = last7.map(d => expenses.filter(e => e.date === d).reduce((s, e) => s + Number(e.amount), 0));
+  const wkExpData = last7.map(d => expenses.filter(e => e.date === d && !isIncome(e.category)).reduce((s, e) => s + Number(e.amount), 0));
   if (weeklyChart) weeklyChart.destroy();
   weeklyChart = new Chart(document.getElementById('weeklyChart').getContext('2d'), {
     type: 'bar',
-    data: { labels: last7.map(d => new Date(d).toLocaleDateString('en-GB', { weekday: 'short' })), datasets: [{ label: 'Expenses', data: wkData, backgroundColor: brandColors.green, borderRadius: 8, hoverBackgroundColor: '#0a4a15' }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(26,35,50,0.95)', callbacks: { label: ctx => ` ${fmt(ctx.parsed.y)}` } } }, scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { callback: v => '€' + v } }, x: { grid: { display: false } } } }
+    data: { labels: last7.map(d => new Date(d).toLocaleDateString('en-GB', { weekday: 'short' })), datasets: [{ label: 'Spending', data: wkExpData, backgroundColor: brandColors.green, borderRadius: 8, hoverBackgroundColor: '#0a4a15' }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${fmt(ctx.parsed.y)}` } } }, scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { callback: v => '€' + v } }, x: { grid: { display: false } } } }
   });
+
+  // --- Income vs Expenses: last 6 months grouped bar ---
+  const last6Months = [...Array(6)].map((_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    return { year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) };
+  }).reverse();
+  const ieIncomeData = last6Months.map(m => expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0));
+  const ieExpData = last6Months.map(m => expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && !isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0));
+  if (window._ieChart) window._ieChart.destroy();
+  window._ieChart = new Chart(document.getElementById('incomeExpenseChart').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: last6Months.map(m => m.label),
+      datasets: [
+        { label: 'Income', data: ieIncomeData, backgroundColor: '#0d5d1a', borderRadius: 6 },
+        { label: 'Expenses', data: ieExpData, backgroundColor: '#E8730F', borderRadius: 6 },
+      ]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 12 } }, tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } } }, scales: { y: { beginAtZero: true, grid: { display: false }, ticks: { callback: v => '€' + v } }, x: { grid: { display: false } } } }
+  });
+
+  // --- 6-month net balance line ---
+  const balData = last6Months.map(m => {
+    const inc = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0);
+    const exp = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && !isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0);
+    return inc - exp;
+  });
+  if (window._balChart) window._balChart.destroy();
+  window._balChart = new Chart(document.getElementById('balanceChart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: last6Months.map(m => m.label),
+      datasets: [{ label: 'Net Balance', data: balData, borderColor: '#0d5d1a', backgroundColor: 'rgba(13,93,26,0.08)', fill: true, tension: 0.4, pointBackgroundColor: balData.map(v => v >= 0 ? '#0d5d1a' : '#cc2f2f'), pointRadius: 5 }]
+    },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { ...tooltipBase, callbacks: { label: ctx => ` Net: ${fmt(ctx.parsed.y)}` } } }, scales: { y: { grid: { display: false }, ticks: { callback: v => '€' + v } }, x: { grid: { display: false } } } }
+  });
+
+  // Update budget bars after charts
+  renderBudgetBars();
 }
 
 // =============================================
@@ -558,6 +600,157 @@ window.switchTab = tab => {
 };
 
 // =============================================
+// BUDGET SYSTEM
+// =============================================
+function loadBudget() {
+  try { return JSON.parse(localStorage.getItem('sw_budget') || '{}'); } catch { return {}; }
+}
+function saveBudget() {
+  const budget = {};
+  const total = parseFloat(document.getElementById('total-budget-input').value);
+  if (total > 0) budget._total = total;
+  EXPENSE_CATS.forEach(c => {
+    const v = parseFloat(document.getElementById(`budget-cat-${c.replace(/[^a-z0-9]/gi,'_')}`).value);
+    if (v > 0) budget[c] = v;
+  });
+  localStorage.setItem('sw_budget', JSON.stringify(budget));
+  document.getElementById('budget-modal').classList.add('hidden');
+  renderBudgetBars();
+  showToast('Budget saved!', 'green');
+}
+window.openBudget = () => {
+  const b = loadBudget();
+  document.getElementById('total-budget-input').value = b._total || '';
+  // Build per-category inputs
+  document.getElementById('cat-budget-inputs').innerHTML = EXPENSE_CATS.map(c => {
+    const id = `budget-cat-${c.replace(/[^a-z0-9]/gi,'_')}`;
+    const ci = CATEGORIES[c];
+    return `<div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-lg ${ci.bg} ${ci.color} flex items-center justify-center shrink-0"><i data-lucide="${ci.icon}" class="w-3.5 h-3.5"></i></div>
+      <label class="flex-1 text-[13px] font-lato text-brand-dark">${c}</label>
+      <div class="relative w-28"><span class="absolute left-2 top-1/2 -translate-y-1/2 text-brand-medium text-[13px]">€</span>
+        <input type="number" id="${id}" step="10" min="0" value="${b[c] || ''}" placeholder="–" class="w-full pl-5 pr-2 py-1.5 bg-brand-cream border border-brand-light rounded-lg text-[13px] outline-none focus:ring-1 focus:ring-brand-orange">
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('budget-modal').classList.remove('hidden');
+  lucide.createIcons();
+};
+function renderBudgetBars() {
+  const b = loadBudget();
+  const now = new Date();
+  const monthExpenses = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && !isIncome(e.category); });
+  const totalSpent = monthExpenses.reduce((s, e) => s + Number(e.amount), 0);
+  const section = document.getElementById('budget-section');
+  const bars = document.getElementById('budget-bars');
+  const hasAny = b._total || EXPENSE_CATS.some(c => b[c]);
+  if (!hasAny) { section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  let html = '';
+  if (b._total) {
+    const pct = Math.min(100, (totalSpent / b._total) * 100);
+    const over = totalSpent > b._total;
+    html += `<div>
+      <div class="flex justify-between text-[13px] mb-1">
+        <span class="font-poppins font-semibold text-brand-dark">Total</span>
+        <span class="${over ? 'text-brand-red font-bold' : 'text-brand-medium'}">${fmt(totalSpent)} / ${fmt(b._total)}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${over ? 'bg-brand-red' : 'bg-brand-green'}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+  EXPENSE_CATS.forEach(c => {
+    if (!b[c]) return;
+    const spent = monthExpenses.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0);
+    const pct = Math.min(100, (spent / b[c]) * 100);
+    const over = spent > b[c];
+    const ci = CATEGORIES[c];
+    html += `<div>
+      <div class="flex items-center justify-between text-[13px] mb-1">
+        <div class="flex items-center gap-1.5"><div class="w-4 h-4 rounded ${ci.bg} ${ci.color} flex items-center justify-center"><i data-lucide="${ci.icon}" class="w-2.5 h-2.5"></i></div><span class="text-brand-dark">${c}</span></div>
+        <span class="${over ? 'text-brand-red font-bold' : 'text-brand-medium'}">${fmt(spent)} / ${fmt(b[c])}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill ${over ? 'bg-brand-red' : 'bg-brand-green'}" style="width:${pct}%"></div></div>
+    </div>`;
+  });
+  bars.innerHTML = html;
+  lucide.createIcons();
+}
+
+// =============================================
+// AI ADVISOR
+// =============================================
+window.openAdvisor = () => {
+  document.getElementById('advisor-modal').classList.remove('hidden');
+  lucide.createIcons();
+};
+window.askAIAdvisor = async () => {
+  if (!AI_GATEWAY_KEY) {
+    showToast('Add VITE_VERCEL_AI_KEY to use AI Advisor.', 'red');
+    return;
+  }
+  const btn = document.getElementById('ask-ai-btn');
+  const loading = document.getElementById('advisor-loading');
+  const content = document.getElementById('advisor-content');
+  const empty = document.getElementById('advisor-empty');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px"></div> Analysing...';
+  loading.classList.remove('hidden');
+  content.innerHTML = '';
+  empty.classList.add('hidden');
+  // Build spending summary for last 30 days
+  const since = new Date(); since.setDate(since.getDate() - 30);
+  const sinceStr = since.toISOString().split('T')[0];
+  const recent = expenses.filter(e => e.date >= sinceStr);
+  const totalInc = recent.filter(e => isIncome(e.category)).reduce((s, e) => s + Number(e.amount), 0);
+  const totalExp = recent.filter(e => !isIncome(e.category)).reduce((s, e) => s + Number(e.amount), 0);
+  const byCat = EXPENSE_CATS.map(c => ({ cat: c, spent: recent.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0) })).filter(x => x.spent > 0).sort((a, b) => b.spent - a.spent);
+  const budget = loadBudget();
+  const budgetStr = budget._total ? `Monthly budget set: €${budget._total}` : 'No monthly budget set';
+  const catStr = byCat.map(x => `  - ${x.cat}: €${x.spent.toFixed(2)}`).join('\n');
+  const prompt = `You are a personal finance advisor. Analyse the following spending data and provide:
+1. A brief summary of the user's financial health (2-3 sentences)
+2. The top 3 concrete actionable tips to reduce expenses
+3. One specific category where they can save the most money and how
+
+Spending data (last 30 days):
+- Total income: €${totalInc.toFixed(2)}
+- Total expenses: €${totalExp.toFixed(2)}
+- Net balance: €${(totalInc - totalExp).toFixed(2)}
+- ${budgetStr}
+- Expenses by category:
+${catStr}
+
+Be specific, friendly, and concise. Use simple language. Format your response with clear sections using markdown (## for headers, - for bullet points, **bold** for emphasis). Do not repeat the raw numbers back, focus on insights and advice.`;
+  try {
+    const res = await fetch('https://ai-gateway.vercel.sh/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${AI_GATEWAY_KEY}` },
+      body: JSON.stringify({ model: AI_GATEWAY_MODEL, messages: [{ role: 'user', content: prompt }], temperature: 0.7 }),
+    });
+    loading.classList.add('hidden');
+    if (!res.ok) { showToast('AI Advisor failed. Check your API key.', 'red'); empty.classList.remove('hidden'); return; }
+    const json = await res.json();
+    const text = json.choices?.[0]?.message?.content || '';
+    // Simple markdown-to-HTML renderer
+    content.innerHTML = text
+      .replace(/^## (.+)$/gm, '<p class="font-poppins font-bold text-brand-dark text-[15px] mt-4 mb-1">$1</p>')
+      .replace(/^### (.+)$/gm, '<p class="font-poppins font-semibold text-brand-dark text-[14px] mt-3 mb-1">$1</p>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/^- (.+)$/gm, '<li class="mb-1">$1</li>')
+      .replace(/(<li.*<\/li>\n?)+/gs, m => `<ul class="list-disc pl-5 mb-3">${m}</ul>`)
+      .replace(/\n\n/g, '</p><p class="mb-2">')
+      .replace(/^(?!<[pul])/gm, '');
+  } catch (err) {
+    loading.classList.add('hidden');
+    showToast('AI Advisor error: ' + err.message, 'red');
+    empty.classList.remove('hidden');
+  }
+  btn.disabled = false;
+  btn.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> Analyse my spending';
+  lucide.createIcons();
+};
+
+// =============================================
 // HELPERS
 // =============================================
 function fmt(v) { return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'EUR' }).format(v); }
@@ -571,3 +764,5 @@ function showToast(msg, type = 'green') {
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
+
+

@@ -29,6 +29,11 @@ body{background:#F5F5F2}
 .badge-manual{background:#e8f5e9;color:#0d5d1a}
 .badge-statement{background:#fff3e0;color:#E8730F}
 .row-deleted{opacity:0.35;text-decoration:line-through}
+.progress-bar{height:8px;border-radius:4px;background:#E0E0E0;overflow:hidden}
+.progress-fill{height:100%;border-radius:4px;transition:width 0.5s ease}
+.ai-advice p{margin-bottom:0.75rem;line-height:1.6}
+.ai-advice strong{color:#1a2332}
+.ai-advice ul{list-style:disc;padding-left:1.25rem;margin-bottom:0.75rem}
 </style>
 </head>
 <body class="font-lato text-brand-dark">
@@ -40,20 +45,68 @@ body{background:#F5F5F2}
 </div>
 
 <!-- Auth -->
-<div id="auth-screen" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-brand-cream">
-  <div class="max-w-md w-full p-8 text-center bg-white rounded-2xl shadow-sm border border-brand-light">
-    <div class="mb-8 flex justify-center">
-      <div class="p-4 bg-brand-green rounded-2xl shadow-sm">
-        <i data-lucide="wallet" class="w-12 h-12 text-white"></i>
+<div id="auth-screen" class="fixed inset-0 z-50 hidden overflow-auto" style="background:linear-gradient(135deg,#0d5d1a 0%,#1a2332 55%,#0d5d1a 100%)">
+  <div class="min-h-full flex items-center justify-center p-6">
+    <div class="w-full max-w-4xl grid lg:grid-cols-2 overflow-hidden rounded-3xl shadow-2xl">
+      <!-- Left: branding panel -->
+      <div class="relative hidden lg:flex flex-col justify-between p-10 text-white" style="background:rgba(255,255,255,0.08);backdrop-filter:blur(16px)">
+        <div>
+          <div class="flex items-center gap-3 mb-10">
+            <div class="p-2.5 bg-brand-orange rounded-xl shadow-lg"><i data-lucide="wallet" class="w-7 h-7 text-white"></i></div>
+            <span class="font-poppins font-bold text-2xl">SpendWise</span>
+            <span class="text-[11px] font-poppins font-bold bg-brand-orange px-2 py-0.5 rounded-full">AI</span>
+          </div>
+          <h2 class="text-[36px] font-poppins font-bold leading-tight mb-4">Take control of<br>your finances</h2>
+          <p class="text-[15px] opacity-70 mb-10 leading-relaxed">Track spending, import bank statements, get AI-powered advice and set budgets — all in one place.</p>
+          <div class="space-y-5">
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(255,255,255,0.15)"><i data-lucide="file-up" class="w-4 h-4"></i></div>
+              <div><p class="font-poppins font-semibold text-[14px]">Smart Import</p><p class="text-[12px] opacity-60 mt-0.5">Upload PDF, CSV or TXT — AI reads and categorises everything</p></div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(255,255,255,0.15)"><i data-lucide="bot" class="w-4 h-4"></i></div>
+              <div><p class="font-poppins font-semibold text-[14px]">AI Spending Advisor</p><p class="text-[12px] opacity-60 mt-0.5">Get personal tips to reduce expenses and save more</p></div>
+            </div>
+            <div class="flex items-start gap-3">
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:rgba(255,255,255,0.15)"><i data-lucide="target" class="w-4 h-4"></i></div>
+              <div><p class="font-poppins font-semibold text-[14px]">Budget Tracking</p><p class="text-[12px] opacity-60 mt-0.5">Set budgets per category and track progress in real time</p></div>
+            </div>
+          </div>
+        </div>
+        <p class="text-[11px] opacity-30 mt-8">© 2026 SpendWise</p>
+      </div>
+      <!-- Right: login card -->
+      <div class="flex flex-col justify-center p-8 sm:p-12 bg-white">
+        <div class="flex lg:hidden items-center gap-2 mb-8">
+          <div class="p-2 bg-brand-green rounded-xl"><i data-lucide="wallet" class="w-5 h-5 text-white"></i></div>
+          <span class="font-poppins font-bold text-xl text-brand-dark">SpendWise</span>
+          <span class="text-[10px] font-bold bg-brand-orange text-white px-1.5 py-0.5 rounded-full ml-1">AI</span>
+        </div>
+        <div class="mb-8">
+          <h1 class="text-[30px] font-poppins font-bold text-brand-dark mb-2">Welcome back 👋</h1>
+          <p class="text-[15px] text-brand-medium">Sign in to continue to your dashboard</p>
+        </div>
+        <button id="login-btn" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-brand-light py-4 px-6 rounded-2xl font-poppins font-semibold text-brand-dark hover:border-brand-orange hover:bg-orange-50 transition-all shadow-sm hover:shadow-md active:scale-[0.98] text-[15px] mb-6">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-5 h-5" alt="Google">
+          Continue with Google
+        </button>
+        <div class="grid grid-cols-3 gap-3 mb-6">
+          <div class="text-center p-3 bg-brand-cream rounded-xl">
+            <i data-lucide="shield-check" class="w-5 h-5 text-brand-green mx-auto mb-1"></i>
+            <p class="text-[11px] font-poppins font-semibold text-brand-dark">Secure</p>
+          </div>
+          <div class="text-center p-3 bg-brand-cream rounded-xl">
+            <i data-lucide="lock" class="w-5 h-5 text-brand-green mx-auto mb-1"></i>
+            <p class="text-[11px] font-poppins font-semibold text-brand-dark">Private</p>
+          </div>
+          <div class="text-center p-3 bg-brand-cream rounded-xl">
+            <i data-lucide="zap" class="w-5 h-5 text-brand-orange mx-auto mb-1"></i>
+            <p class="text-[11px] font-poppins font-semibold text-brand-dark">Fast</p>
+          </div>
+        </div>
+        <p class="text-[12px] text-brand-medium text-center leading-relaxed">Your data is stored securely via <span class="font-semibold text-brand-dark">Supabase</span>. We never share your information.</p>
       </div>
     </div>
-    <h1 class="text-5xl font-poppins font-bold text-brand-dark mb-2">SpendWise</h1>
-    <p class="text-[18px] text-brand-medium mb-10">AI-powered expense tracking.</p>
-    <button id="login-btn" class="w-full flex items-center justify-center gap-3 bg-white border-[3px] border-brand-orange py-4 px-6 rounded-xl font-poppins font-bold text-brand-orange hover:bg-orange-50 transition-all shadow-sm active:scale-[0.98]">
-      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-6 h-6" alt="Google">
-      Sign in with Google
-    </button>
-    <p class="mt-8 text-[14px] text-brand-medium">Authentication powered by Supabase</p>
   </div>
 </div>
 
@@ -126,6 +179,59 @@ body{background:#F5F5F2}
   </div>
 </div>
 
+
+<!-- AI Advisor Modal -->
+<div id="advisor-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh">
+    <div class="p-6 border-b border-brand-light flex justify-between items-center shrink-0">
+      <h3 class="text-[22px] font-poppins font-semibold text-brand-dark flex items-center gap-2"><i data-lucide="bot" class="w-5 h-5 text-brand-orange"></i> AI Spending Advisor</h3>
+      <button onclick="document.getElementById('advisor-modal').classList.add('hidden')" class="text-brand-medium hover:text-brand-dark"><i data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <div class="flex-1 overflow-auto custom-scrollbar p-6">
+      <div id="advisor-loading" class="hidden flex flex-col items-center justify-center py-10 gap-3">
+        <div class="loader"></div>
+        <p class="text-brand-medium text-[14px]">Analysing your spending patterns...</p>
+      </div>
+      <div id="advisor-content" class="ai-advice text-[14px] text-brand-dark leading-relaxed"></div>
+      <div id="advisor-empty" class="py-10 text-center">
+        <i data-lucide="sparkles" class="w-12 h-12 text-brand-orange mx-auto mb-3 opacity-60"></i>
+        <p class="font-poppins font-semibold text-brand-dark mb-2">Get personalised AI advice</p>
+        <p class="text-[13px] text-brand-medium">The AI will analyse your last 30 days of spending and suggest ways to save money.</p>
+      </div>
+    </div>
+    <div class="p-6 border-t border-brand-light shrink-0 flex gap-3">
+      <button onclick="document.getElementById('advisor-modal').classList.add('hidden')" class="px-5 py-2.5 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light transition-all">Close</button>
+      <button id="ask-ai-btn" onclick="askAIAdvisor()" class="flex-1 bg-brand-orange text-white font-poppins font-bold py-2.5 rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-2">
+        <i data-lucide="sparkles" class="w-4 h-4"></i> Analyse my spending
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Budget Modal -->
+<div id="budget-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh">
+    <div class="p-6 border-b border-brand-light flex justify-between items-center shrink-0">
+      <h3 class="text-[22px] font-poppins font-semibold text-brand-dark flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-brand-orange"></i> Monthly Budget</h3>
+      <button onclick="document.getElementById('budget-modal').classList.add('hidden')" class="text-brand-medium hover:text-brand-dark"><i data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <div class="flex-1 overflow-auto custom-scrollbar p-6 space-y-4">
+      <div>
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark block mb-1">Total Monthly Budget</label>
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+          <input type="number" id="total-budget-input" step="50" min="0" placeholder="e.g. 2000" class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+        </div>
+      </div>
+      <p class="text-[13px] text-brand-medium">Or set per-category budgets (optional):</p>
+      <div id="cat-budget-inputs" class="space-y-3"></div>
+    </div>
+    <div class="p-6 border-t border-brand-light shrink-0 flex gap-3">
+      <button onclick="document.getElementById('budget-modal').classList.add('hidden')" class="px-5 py-2.5 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light">Cancel</button>
+      <button onclick="saveBudget()" class="flex-1 bg-brand-green text-white font-poppins font-bold py-2.5 rounded-xl hover:brightness-110 transition-all">Save Budget</button>
+    </div>
+  </div>
+</div>
+
 <!-- Edit Modal -->
 <div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
   <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
@@ -176,6 +282,8 @@ body{background:#F5F5F2}
           <span id="user-email" class="text-[13px] text-brand-medium">user@example.com</span>
         </div>
         <img id="user-photo" src="https://ui-avatars.com/api/?background=0d5d1a&color=fff" class="w-9 h-9 rounded-full border border-brand-light" alt="Avatar">
+        <button onclick="openAdvisor()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="AI Advisor"><i data-lucide="bot" class="w-5 h-5"></i></button>
+        <button onclick="openBudget()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="Budget"><i data-lucide="target" class="w-5 h-5"></i></button>
         <button onclick="openSettings()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="Settings"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
         <button id="logout-btn" class="p-2 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-colors" title="Sign out"><i data-lucide="log-out" class="w-5 h-5"></i></button>
       </div>
@@ -288,6 +396,16 @@ body{background:#F5F5F2}
 
       <!-- Right Column -->
       <div class="lg:col-span-4 space-y-8">
+        <!-- Budget Progress -->
+        <section id="budget-section" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <div class="flex items-center justify-between mb-5">
+            <h2 class="text-[22px] font-poppins font-semibold text-brand-dark">Budget</h2>
+            <button onclick="openBudget()" class="text-[12px] font-poppins font-semibold text-brand-orange hover:underline">Edit</button>
+          </div>
+          <div id="budget-bars" class="space-y-4"></div>
+        </section>
+
+        <!-- Monthly Categories Doughnut -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
           <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">Monthly Categories</h2>
           <div class="aspect-square relative flex items-center justify-center mb-4">
@@ -295,9 +413,23 @@ body{background:#F5F5F2}
           </div>
           <div id="category-legend" class="grid grid-cols-2 gap-y-3 gap-x-4 pt-4 border-t border-brand-cream"></div>
         </section>
+
+        <!-- Income vs Expenses -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
-          <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">Weekly Trend</h2>
-          <div class="h-64"><canvas id="weeklyChart"></canvas></div>
+          <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">Income vs Expenses</h2>
+          <div class="h-56"><canvas id="incomeExpenseChart"></canvas></div>
+        </section>
+
+        <!-- 6-Month Balance Trend -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">6-Month Balance</h2>
+          <div class="h-48"><canvas id="balanceChart"></canvas></div>
+        </section>
+
+        <!-- Weekly Trend -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">Weekly Spending</h2>
+          <div class="h-56"><canvas id="weeklyChart"></canvas></div>
         </section>
       </div>
     </div>
