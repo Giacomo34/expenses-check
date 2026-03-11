@@ -18,6 +18,7 @@ tailwind.config = {
 </script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.mjs" type="module"></script>
 <style>
 body{background:#F5F5F2}
 .custom-scrollbar::-webkit-scrollbar{width:6px}
@@ -264,8 +265,8 @@ body{background:#F5F5F2}
           <div id="drop-zone" class="border-2 border-dashed border-brand-light rounded-xl p-8 text-center hover:border-brand-orange hover:bg-orange-50/30 transition-all cursor-pointer" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('border-brand-orange')" ondrop="handleDrop(event)">
             <i data-lucide="upload-cloud" class="w-10 h-10 text-brand-medium mx-auto mb-3"></i>
             <p class="font-poppins font-semibold text-brand-dark">Drop your file here or <span class="text-brand-orange">browse</span></p>
-            <p class="text-[13px] text-brand-medium mt-1">Supports CSV, TXT — max 5MB</p>
-            <input type="file" id="file-input" accept=".csv,.txt" class="hidden" onchange="handleFileSelect(this)">
+            <p class="text-[13px] text-brand-medium mt-1">Supports CSV, TXT, PDF — max 10MB</p>
+            <input type="file" id="file-input" accept=".csv,.txt,.pdf" class="hidden" onchange="handleFileSelect(this)">
           </div>
           <div id="import-status" class="hidden mt-4 flex items-center gap-3 text-brand-medium">
             <div class="loader" style="width:18px;height:18px;border-width:2px"></div>

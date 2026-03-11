@@ -247,6 +247,22 @@ window.handleFileSelect = input => {
   if (input.files[0]) processFile(input.files[0]);
 };
 
+async function extractPdfText(file) {
+  // Dynamically import pdf.js (works both from CDN in HTML and as npm module)
+  const pdfjsLib = await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.min.mjs');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.2.67/build/pdf.worker.min.mjs';
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(item => item.str).join(' ');
+    fullText += pageText + '\n';
+  }
+  return fullText;
+}
+
 async function processFile(file) {
   if (!AI_GATEWAY_KEY) {
     showToast('AI key not configured. Add VITE_VERCEL_AI_KEY to your Vercel env vars.', 'red');
@@ -256,17 +272,29 @@ async function processFile(file) {
   const status = document.getElementById('import-status');
   const statusText = document.getElementById('import-status-text');
   status.classList.remove('hidden');
-  statusText.textContent = 'Reading file...';
-  const text = await file.text();
-  statusText.textContent = 'Processing with AI...';
+  const isPdf = file.name.toLowerCase().endsWith('.pdf');
+  let text;
   try {
+    if (isPdf) {
+      statusText.textContent = 'Extracting text from PDF...';
+      text = await extractPdfText(file);
+      if (!text.trim()) {
+        status.classList.add('hidden');
+        showToast('PDF has no readable text (scanned image PDFs are not supported yet).', 'red');
+        return;
+      }
+    } else {
+      statusText.textContent = 'Reading file...';
+      text = await file.text();
+    }
+    statusText.textContent = 'Processing with AI...';
     const rows = await parseStatementWithAI(text, AI_GATEWAY_KEY, AI_GATEWAY_MODEL);
     status.classList.add('hidden');
     if (!rows || rows.length === 0) { showToast('No transactions found.', 'red'); return; }
     openReviewModal(rows);
   } catch (err) {
     status.classList.add('hidden');
-    showToast('AI parsing failed: ' + err.message, 'red');
+    showToast('Failed to process file: ' + err.message, 'red');
     console.error(err);
   }
 }
