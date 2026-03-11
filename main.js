@@ -12,18 +12,28 @@ const AI_GATEWAY_MODEL = import.meta.env.VITE_AI_MODEL || 'google/gemini-2.0-fla
 // CATEGORY CONFIG
 // =============================================
 const CATEGORIES = {
-  'Food & Dining':    { icon: 'utensils',       color: 'text-brand-orange', bg: 'bg-orange-50',   chart: '#E8730F' },
-  'Transport':        { icon: 'car',             color: 'text-brand-medium', bg: 'bg-slate-50',    chart: '#4a5f7f' },
-  'Bills & Utilities':{ icon: 'zap',             color: 'text-brand-dark',   bg: 'bg-gray-50',     chart: '#1a2332' },
-  'Shopping':         { icon: 'shopping-bag',    color: 'text-brand-green',  bg: 'bg-green-50',    chart: '#0d5d1a' },
-  'Entertainment':    { icon: 'clapperboard',    color: 'text-brand-red',    bg: 'bg-red-50',      chart: '#cc2f2f' },
-  'Health':           { icon: 'heart-pulse',     color: 'text-pink-600',     bg: 'bg-pink-50',     chart: '#db2777' },
-  'Travel':           { icon: 'plane',           color: 'text-blue-600',     bg: 'bg-blue-50',     chart: '#2563eb' },
-  'Education':        { icon: 'book-open',       color: 'text-indigo-600',   bg: 'bg-indigo-50',   chart: '#4f46e5' },
-  'Subscriptions':    { icon: 'repeat',          color: 'text-purple-600',   bg: 'bg-purple-50',   chart: '#9333ea' },
-  'Other':            { icon: 'package',         color: 'text-brand-medium', bg: 'bg-brand-cream', chart: '#E0E0E0' },
+  // ---- EXPENSES ----
+  'Food & Dining':    { icon: 'utensils',       color: 'text-brand-orange', bg: 'bg-orange-50',   chart: '#E8730F', type: 'expense' },
+  'Transport':        { icon: 'car',             color: 'text-brand-medium', bg: 'bg-slate-50',    chart: '#4a5f7f', type: 'expense' },
+  'Bills & Utilities':{ icon: 'zap',             color: 'text-brand-dark',   bg: 'bg-gray-50',     chart: '#1a2332', type: 'expense' },
+  'Shopping':         { icon: 'shopping-bag',    color: 'text-emerald-700',  bg: 'bg-green-50',    chart: '#059669', type: 'expense' },
+  'Entertainment':    { icon: 'clapperboard',    color: 'text-brand-red',    bg: 'bg-red-50',      chart: '#cc2f2f', type: 'expense' },
+  'Health':           { icon: 'heart-pulse',     color: 'text-pink-600',     bg: 'bg-pink-50',     chart: '#db2777', type: 'expense' },
+  'Travel':           { icon: 'plane',           color: 'text-blue-600',     bg: 'bg-blue-50',     chart: '#2563eb', type: 'expense' },
+  'Education':        { icon: 'book-open',       color: 'text-indigo-600',   bg: 'bg-indigo-50',   chart: '#4f46e5', type: 'expense' },
+  'Subscriptions':    { icon: 'repeat',          color: 'text-purple-600',   bg: 'bg-purple-50',   chart: '#9333ea', type: 'expense' },
+  'Other':            { icon: 'package',         color: 'text-brand-medium', bg: 'bg-brand-cream', chart: '#E0E0E0', type: 'expense' },
+  // ---- INCOME ----
+  'Salary':           { icon: 'banknote',        color: 'text-brand-green',  bg: 'bg-green-100',   chart: '#0d5d1a', type: 'income' },
+  'Freelance':        { icon: 'briefcase',       color: 'text-teal-600',     bg: 'bg-teal-50',     chart: '#0d9488', type: 'income' },
+  'Investments':      { icon: 'trending-up',     color: 'text-cyan-600',     bg: 'bg-cyan-50',     chart: '#0891b2', type: 'income' },
+  'Refund':           { icon: 'rotate-ccw',      color: 'text-lime-600',     bg: 'bg-lime-50',     chart: '#65a30d', type: 'income' },
+  'Other Income':     { icon: 'circle-dollar-sign', color: 'text-green-600', bg: 'bg-green-50',    chart: '#16a34a', type: 'income' },
 };
 const CAT_NAMES = Object.keys(CATEGORIES);
+const INCOME_CATS = CAT_NAMES.filter(c => CATEGORIES[c].type === 'income');
+const EXPENSE_CATS = CAT_NAMES.filter(c => CATEGORIES[c].type === 'expense');
+const isIncome = cat => CATEGORIES[cat]?.type === 'income';
 
 // =============================================
 // STATE
@@ -300,17 +310,24 @@ async function processFile(file) {
 }
 
 async function parseStatementWithAI(rawText, apiKey, model) {
-  const catList = CAT_NAMES.join(', ');
-  const prompt = `You are a bank statement parser. Parse the following bank statement text and extract ALL expense transactions.
+  const expenseCatList = EXPENSE_CATS.join(', ');
+  const incomeCatList = INCOME_CATS.join(', ');
+  const prompt = `You are a bank statement parser. Parse the following bank statement text and extract ALL transactions (both expenses and income/credits).
 
-For each transaction return a JSON array with objects: { "date": "YYYY-MM-DD", "description": "merchant name", "amount": number (always positive), "category": one of [${catList}] }.
+For each transaction return a JSON array with objects: { "date": "YYYY-MM-DD", "description": "merchant or payer name", "amount": number (always positive), "category": one of the categories below }.
+
+Expense categories: [${expenseCatList}]
+Income categories: [${incomeCatList}]
 
 Rules:
 - date must be YYYY-MM-DD format
 - amount must always be a positive number
+- for EXPENSES choose from expense categories; for INCOME/CREDITS choose from income categories
 - category must be EXACTLY one of the listed categories
-- if unsure, use "Other"
+- if an expense is unsure, use "Other"; if income is unsure, use "Other Income"
 - skip header rows, balance rows, or non-transaction lines
+- salary/wages -> "Salary"; freelance/consulting -> "Freelance"; stock/dividends -> "Investments"
+- cashback/returns -> "Refund"
 - return ONLY valid JSON array, no markdown, no explanation
 
 Bank statement:
@@ -430,10 +447,20 @@ function updateUI() {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
-  const sum = arr => arr.reduce((s, e) => s + Number(e.amount), 0);
-  document.getElementById('stat-today').textContent = fmt(sum(expenses.filter(e => e.date === todayStr)));
-  document.getElementById('stat-week').textContent = fmt(sum(expenses.filter(e => new Date(e.date) >= startOfWeek)));
-  document.getElementById('stat-month').textContent = fmt(sum(expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); })));
+  const net = arr => arr.reduce((s, e) => isIncome(e.category) ? s + Number(e.amount) : s - Number(e.amount), 0);
+  const fmtNet = v => (v >= 0 ? '+' : '') + fmt(Math.abs(v));
+  const netToday = net(expenses.filter(e => e.date === todayStr));
+  const netWeek = net(expenses.filter(e => new Date(e.date) >= startOfWeek));
+  const netMonth = net(expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }));
+  const statToday = document.getElementById('stat-today');
+  const statWeek = document.getElementById('stat-week');
+  const statMonth = document.getElementById('stat-month');
+  statToday.textContent = fmtNet(netToday);
+  statToday.className = `text-4xl font-poppins font-bold ${netToday >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
+  statWeek.textContent = fmtNet(netWeek);
+  statWeek.className = `text-4xl font-poppins font-bold ${netWeek >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
+  statMonth.textContent = fmtNet(netMonth);
+  statMonth.className = `text-4xl font-poppins font-bold ${netMonth >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
   renderList(); updateCharts(); lucide.createIcons();
 }
 
@@ -452,10 +479,14 @@ function renderList() {
   } else {
     el.innerHTML = filtered.map(e => {
       const ci = CATEGORIES[e.category] || CATEGORIES['Other'];
+      const income = isIncome(e.category);
       const src = e.source === 'statement'
         ? `<span class="badge-statement text-[10px] font-poppins font-bold px-1.5 py-0.5 rounded ml-1">stmt</span>`
         : `<span class="badge-manual text-[10px] font-poppins font-bold px-1.5 py-0.5 rounded ml-1">manual</span>`;
-      return `<div class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border border-brand-light hover:border-brand-green hover:shadow-sm transition-all group">
+      const amountStr = income
+        ? `<span class="font-poppins font-bold text-brand-green">+${fmt(e.amount)}</span>`
+        : `<span class="font-poppins font-bold text-brand-dark">${fmt(e.amount)}</span>`;
+      return `<div class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border ${income ? 'border-green-100' : 'border-brand-light'} hover:border-brand-green hover:shadow-sm transition-all group">
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 rounded-xl ${ci.bg} ${ci.color} flex items-center justify-center shadow-sm shrink-0">
             <i data-lucide="${ci.icon}" class="w-5 h-5"></i>
@@ -466,7 +497,7 @@ function renderList() {
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <span class="font-poppins font-bold text-brand-dark">${fmt(e.amount)}</span>
+          ${amountStr}
           <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <button onclick="openEditModal('${e.id}')" class="p-1.5 text-brand-medium hover:text-brand-green hover:bg-green-50 rounded-lg transition-all"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
             <button onclick="deleteExpense('${e.id}')" class="p-1.5 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-all"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
