@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpendWise | Personal Expense Tracker</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Lato:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            orange: '#E8730F',
+                            green: '#0d5d1a',
+                            red: '#cc2f2f',
+                            cream: '#F5F5F2',
+                            dark: '#1a2332',
+                            medium: '#4a5f7f',
+                            light: '#E0E0E0',
+                        }
+                    },
+                    fontFamily: {
+                        poppins: ['Poppins', 'sans-serif'],
+                        lato: ['Lato', 'sans-serif'],
+                        caveat: ['Caveat', 'cursive'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { background-color: #F5F5F2; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4a5f7f; }
+        [v-cloak] { display: none; }
+        
+        /* Spinner */
+        .loader {
+            border: 3px solid #E0E0E0;
+            border-top: 3px solid #E8730F;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="font-lato text-brand-dark">
+
+    <!-- Loading Overlay -->
+    <div id="loading-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-brand-cream">
+        <div class="loader mb-4"></div>
+        <p class="text-brand-medium font-medium">Caricamento SpendWise...</p>
+    </div>
+
+    <!-- Auth Overlay -->
+    <div id="auth-screen" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-brand-cream">
+        <div class="max-w-md w-full p-8 text-center bg-white rounded-2xl shadow-sm border border-brand-light">
+            <div class="mb-8 flex justify-center">
+                <div class="p-4 bg-brand-green rounded-2xl shadow-sm">
+                    <i data-lucide="wallet" class="w-12 h-12 text-white"></i>
+                </div>
+            </div>
+            <h1 class="text-5xl font-poppins font-bold text-brand-dark mb-2">SpendWise</h1>
+            <p class="text-[18px] text-brand-medium mb-10">Gestisci le tue finanze con precisione italiana.</p>
+            
+            <!-- CTA Outline Button per linee guida -->
+            <button id="login-btn" class="w-full flex items-center justify-center gap-3 bg-white border-[3px] border-brand-orange py-4 px-6 rounded-xl font-poppins font-bold text-brand-orange hover:bg-orange-50 transition-all shadow-sm active:scale-[0.98]">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-6 h-6" alt="Google">
+                Accedi con Google
+            </button>
+            <p class="mt-8 text-[14px] text-brand-medium">Sicurezza garantita da Supabase</p>
+        </div>
+    </div>
+
+    <!-- Main App Layout -->
+    <div id="app-content" class="hidden min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-brand-light">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="p-1.5 bg-brand-green rounded-lg">
+                        <i data-lucide="wallet" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="font-poppins font-bold text-xl tracking-tight text-brand-dark">SpendWise</span>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <div class="hidden sm:flex flex-col items-end">
+                        <span id="user-name" class="text-[16px] font-poppins font-semibold text-brand-dark">Utente</span>
+                        <span id="user-email" class="text-[14px] text-brand-medium">utente@example.com</span>
+                    </div>
+                    <img id="user-photo" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-full border border-brand-light shadow-sm" alt="Avatar">
+                    <button id="logout-btn" class="p-2 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-colors" title="Esci">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <div class="mb-8">
+                <h1 class="text-[48px] font-poppins font-bold text-brand-dark">Ciao <span id="welcome-name"></span>!</h1>
+                <p class="font-caveat text-[24px] text-brand-red mt-1">Ecco il riepilogo delle tue spese.</p>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-2 bg-green-50 text-brand-green rounded-lg">
+                            <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[14px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Oggi</span>
+                    </div>
+                    <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-today">€0.00</h3>
+                    <p class="text-[14px] text-brand-medium mt-1">Spese del giorno</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-2 bg-green-50 text-brand-green rounded-lg">
+                            <i data-lucide="calendar-range" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[14px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Questa Settimana</span>
+                    </div>
+                    <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-week">€0.00</h3>
+                    <p class="text-[14px] text-brand-medium mt-1">Totale settimanale</p>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="p-2 bg-green-50 text-brand-green rounded-lg">
+                            <i data-lucide="calendar-days" class="w-5 h-5"></i>
+                        </div>
+                        <span class="text-[14px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Questo Mese</span>
+                    </div>
+                    <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-month">€0.00</h3>
+                    <p class="text-[14px] text-brand-medium mt-1">Budget mensile</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                <!-- Left Column: Form & Lists -->
+                <div class="lg:col-span-8 space-y-8">
+                    <!-- Add Expense Card -->
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+                        <div class="flex items-center gap-2 mb-6">
+                            <i data-lucide="plus-circle" class="w-6 h-6 text-brand-orange"></i>
+                            <h2 class="text-[36px] font-poppins font-bold text-brand-dark">Aggiungi Spesa</h2>
+                        </div>
+                        <form id="expense-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Importo</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+                                    <input type="number" id="amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Categoria</label>
+                                <select id="category" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]">
+                                    <option value="Food">Cibo</option>
+                                    <option value="Transport">Trasporti</option>
+                                    <option value="Bills">Bollette</option>
+                                    <option value="Shopping">Shopping</option>
+                                    <option value="Entertainment">Intrattenimento</option>
+                                    <option value="Other">Altro</option>
+                                </select>
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Data</label>
+                                <input type="date" id="date" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Descrizione (Opzionale)</label>
+                                <input type="text" id="description" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]" placeholder="Per cosa hai speso?">
+                            </div>
+                            <div class="md:col-span-2 pt-4">
+                                <!-- CTA Outline Button per linee guida -->
+                                <button type="submit" id="save-btn" class="w-full bg-white border-[3px] border-brand-orange text-brand-orange hover:bg-orange-50 font-poppins font-bold py-3 rounded-xl transition-all active:scale-[0.99] flex items-center justify-center gap-2 text-[18px]">
+                                    <i data-lucide="save" class="w-5 h-5"></i>
+                                    Salva Spesa
+                                </button>
+                            </div>
+                        </form>
+                    </section>
+
+                    <!-- Tabs for Lists -->
+                    <section class="bg-white rounded-2xl shadow-sm border border-brand-light overflow-hidden">
+                        <div class="flex border-b border-brand-light">
+                            <button onclick="switchTab('today')" id="tab-today" class="flex-1 py-4 text-[16px] font-poppins font-bold border-b-2 border-brand-green text-brand-green transition-all">Oggi</button>
+                            <button onclick="switchTab('week')" id="tab-week" class="flex-1 py-4 text-[16px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">Questa Settimana</button>
+                            <button onclick="switchTab('month')" id="tab-month" class="flex-1 py-4 text-[16px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">Questo Mese</button>
+                        </div>
+                        <div class="p-4 max-h-[500px] overflow-y-auto custom-scrollbar" id="expense-list">
+                            <!-- List items will be injected here -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Column: Charts & Tools -->
+                <div class="lg:col-span-4 space-y-8">
+                    <!-- Pie Chart Card -->
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+                        <h2 class="text-[24px] font-poppins font-semibold text-brand-dark mb-6">Categorie del Mese</h2>
+                        <div class="aspect-square relative flex items-center justify-center mb-4">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                        <div id="category-legend" class="grid grid-cols-2 gap-y-3 gap-x-4 pt-4 border-t border-brand-cream">
+                            <!-- Legend items will be injected here -->
+                        </div>
+                    </section>
+
+                    <!-- Bar Chart Card -->
+                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+                        <h2 class="text-[24px] font-poppins font-semibold text-brand-dark mb-6">Andamento Settimanale</h2>
+                        <div class="h-64">
+                            <canvas id="weeklyChart"></canvas>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-brand-light flex justify-between items-center">
+                <h3 class="text-[24px] font-poppins font-semibold text-brand-dark">Modifica Spesa</h3>
+                <button onclick="closeEditModal()" class="text-brand-medium hover:text-brand-dark">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <form id="edit-form" class="p-6 space-y-4">
+                <input type="hidden" id="edit-id">
+                <div class="space-y-1">
+                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Importo</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+                        <input type="number" id="edit-amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
+                    </div>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Categoria</label>
+                    <select id="edit-category" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
+                        <option value="Food">Cibo</option>
+                        <option value="Transport">Trasporti</option>
+                        <option value="Bills">Bollette</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Entertainment">Intrattenimento</option>
+                        <option value="Other">Altro</option>
+                    </select>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Data</label>
+                    <input type="date" id="edit-date" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Descrizione</label>
+                    <input type="text" id="edit-description" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
+                </div>
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light transition-all text-[16px]">Annulla</button>
+                    <!-- Success Action: Green -->
+                    <button type="submit" id="update-btn" class="flex-1 py-3 bg-brand-green text-white font-poppins font-bold rounded-xl hover:brightness-110 shadow-sm transition-all text-[16px]">Aggiorna</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // ==========================================
+        // CONFIGURAZIONE SUPABASE
+        // SOSTITUISCI QUESTE DUE COSTANTI CON LE TUE CHIAVI!
+        // ==========================================
+        const SUPABASE_URL = 'INSERISCI_QUI_IL_TUO_SUPABASE_URL';
+        const SUPABASE_ANON_KEY = 'INSERISCI_QUI_LA_TUA_SUPABASE_ANON_KEY';
+        
+        let supabase = null;
+        if(SUPABASE_URL !== 'INSERISCI_QUI_IL_TUO_SUPABASE_URL') {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+
+        // State
+        let currentUser = null;
+        let expenses = [];
+        let currentTab = 'today';
+        let categoryChart = null;
+        let weeklyChart = null;
+
+        // Brand colors for charts
+        const brandColors = {
+            orange: '#E8730F',
+            green: '#0d5d1a',
+            red: '#cc2f2f',
+            cream: '#F5F5F2',
+            dark: '#1a2332',
+            medium: '#4a5f7f',
+            light: '#E0E0E0',
+        };
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const authScreen = document.getElementById('auth-screen');
+        const appContent = document.getElementById('app-content');
+        const loginBtn = document.getElementById('login-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const expenseForm = document.getElementById('expense-form');
+        const expenseList = document.getElementById('expense-list');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+
+        // Initialize App
+        window.onload = async () => {
+            lucide.createIcons();
+            document.getElementById('date').valueAsDate = new Date();
+            
+            if(!supabase) {
+                // Avviso se le chiavi mancano, ma mostriamo lo stesso l'interfaccia di login
+                loadingScreen.classList.add('hidden');
+                showAuth();
+                return;
+            }
+
+            // Check Active Session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                currentUser = session.user;
+                await loadExpenses();
+                showApp();
+            } else {
+                showAuth();
+            }
+
+            loadingScreen.classList.add('hidden');
+
+            // Listen for Auth changes
+            supabase.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'SIGNED_IN') {
+                    currentUser = session.user;
+                    await loadExpenses();
+                    showApp();
+                } else if (event === 'SIGNED_OUT') {
+                    currentUser = null;
+                    expenses = [];
+                    showAuth();
+                }
+            });
+        };
+
+        // Auth Logic
+        function showAuth() {
+            authScreen.classList.remove('hidden');
+            appContent.classList.add('hidden');
+        }
+
+        function showApp() {
+            authScreen.classList.add('hidden');
+            appContent.classList.remove('hidden');
+            
+            // Set User Info
+            const name = currentUser?.user_metadata?.full_name || currentUser?.email?.split('@')[0] || "Utente";
+            const avatar = currentUser?.user_metadata?.avatar_url || "https://ui-avatars.com/api/?name=" + name + "&background=0d5d1a&color=fff";
+            
+            document.getElementById('welcome-name').textContent = name;
+            document.getElementById('user-name').textContent = name;
+            document.getElementById('user-email').textContent = currentUser?.email || "";
+            document.getElementById('user-photo').src = avatar;
+            
+            updateUI();
+        }
+
+        loginBtn.addEventListener('click', async () => {
+            if(!supabase) {
+                alert("Questa funzione sarà attiva dopo aver inserito le chiavi Supabase nel file.");
+                return;
+            }
+            
+            await supabase.auth.signInWithOAuth({
+                provider: 'google',
+            });
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            if(supabase) await supabase.auth.signOut();
+        });
+
+        // Supabase Data Operations
+        async function loadExpenses() {
+            if(!currentUser) return;
+            const { data, error } = await supabase
+                .from('expenses')
+                .select('*')
+                .eq('user_id', currentUser.id)
+                .order('date', { ascending: false })
+                .order('created_at', { ascending: false });
+                
+            if (error) {
+                console.error("Errore nel caricamento spese:", error);
+                return;
+            }
+            expenses = data || [];
+        }
+
+        // Form Submission
+        expenseForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!supabase || !currentUser) {
+                alert("Connetti Supabase per salvare!");
+                return;
+            }
+            
+            const btn = document.getElementById('save-btn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loader" style="width: 16px; height: 16px; border-width: 2px;"></div> Salvataggio...';
+            btn.disabled = true;
+
+            const amount = parseFloat(document.getElementById('amount').value);
+            const category = document.getElementById('category').value;
+            const date = document.getElementById('date').value;
+            const description = document.getElementById('description').value;
+
+            const newExpense = {
+                user_id: currentUser.id,
+                amount,
+                category,
+                date,
+                description,
+            };
+
+            const { data, error } = await supabase
+                .from('expenses')
+                .insert([newExpense])
+                .select();
+
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+
+            if (error) {
+                alert("Errore salvataggio spesa.");
+                console.error(error);
+                return;
+            }
+
+            if(data && data[0]) {
+                expenses.unshift(data[0]);
+                updateUI();
+                expenseForm.reset();
+                document.getElementById('date').valueAsDate = new Date();
+            }
+        });
+
+        // Edit Submission
+        editForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!supabase) return;
+            
+            const btn = document.getElementById('update-btn');
+            btn.innerHTML = 'Aggiornamento...';
+            btn.disabled = true;
+
+            const id = document.getElementById('edit-id').value;
+            const amount = parseFloat(document.getElementById('edit-amount').value);
+            const category = document.getElementById('edit-category').value;
+            const date = document.getElementById('edit-date').value;
+            const description = document.getElementById('edit-description').value;
+
+            const { error } = await supabase
+                .from('expenses')
+                .update({ amount, category, date, description })
+                .eq('id', id)
+                .eq('user_id', currentUser.id);
+
+            btn.innerHTML = 'Aggiorna';
+            btn.disabled = false;
+
+            if (error) {
+                alert("Errore in aggiornamento.");
+                console.error(error);
+                return;
+            }
+
+            // Update local state
+            const idx = expenses.findIndex(exp => exp.id === id);
+            if (idx !== -1) {
+                expenses[idx] = { ...expenses[idx], amount, category, date, description };
+                updateUI();
+            }
+            closeEditModal();
+        });
+
+        // Delete Expense
+        window.deleteExpense = async (id) => {
+            if (confirm("Sei sicuro di voler eliminare questa spesa? Questa azione non può essere annullata.")) {
+                const { error } = await supabase
+                    .from('expenses')
+                    .delete()
+                    .eq('id', id)
+                    .eq('user_id', currentUser.id);
+                    
+                if (error) {
+                    alert("Errore in eliminazione.");
+                    console.error(error);
+                    return;
+                }
+                
+                expenses = expenses.filter(exp => exp.id !== id);
+                updateUI();
+            }
+        };
+
+        // UI Updates
+        function updateUI() {
+            const now = new Date();
+            const todayStr = now.toISOString().split('T')[0];
+            
+            // Calculate Totals
+            const todayTotal = expenses
+                .filter(e => e.date === todayStr)
+                .reduce((sum, e) => sum + Number(e.amount), 0);
+
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - now.getDay());
+            const weekTotal = expenses
+                .filter(e => new Date(e.date) >= startOfWeek)
+                .reduce((sum, e) => sum + Number(e.amount), 0);
+
+            const monthTotal = expenses
+                .filter(e => {
+                    const d = new Date(e.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                })
+                .reduce((sum, e) => sum + Number(e.amount), 0);
+
+            document.getElementById('stat-today').textContent = formatCurrency(todayTotal);
+            document.getElementById('stat-week').textContent = formatCurrency(weekTotal);
+            document.getElementById('stat-month').textContent = formatCurrency(monthTotal);
+
+            renderList();
+            updateCharts();
+            lucide.createIcons();
+        }
+
+        function renderList() {
+            const now = new Date();
+            let filtered = [];
+            
+            const sortedExpenses = [...expenses].sort((a, b) => {
+                if (b.date !== a.date) return b.date.localeCompare(a.date);
+                return new Date(b.created_at) - new Date(a.created_at);
+            });
+
+            if (currentTab === 'today') {
+                const todayStr = now.toISOString().split('T')[0];
+                filtered = sortedExpenses.filter(e => e.date === todayStr);
+            } else if (currentTab === 'week') {
+                const startOfWeek = new Date(now);
+                startOfWeek.setDate(now.getDate() - now.getDay());
+                filtered = sortedExpenses.filter(e => new Date(e.date) >= startOfWeek);
+            } else {
+                filtered = sortedExpenses.filter(e => {
+                    const d = new Date(e.date);
+                    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+                });
+            }
+
+            if (filtered.length === 0) {
+                expenseList.innerHTML = `
+                    <div class="py-12 text-center text-brand-medium">
+                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-3 opacity-30 text-brand-dark"></i>
+                        <p class="font-lato">Nessuna spesa trovata per questo periodo.</p>
+                    </div>
+                `;
+            } else {
+                expenseList.innerHTML = filtered.map(e => {
+                    const catInfo = getCategoryInfo(e.category);
+                    return `
+                    <div class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border border-brand-light hover:border-brand-green hover:shadow-sm transition-all group">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 rounded-xl ${catInfo.bg} ${catInfo.color} flex items-center justify-center shadow-sm">
+                                <i data-lucide="${catInfo.icon}" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-poppins font-semibold text-brand-dark">${e.category === 'Food'? 'Cibo' : 
+                                                                          e.category === 'Transport'? 'Trasporti' : 
+                                                                          e.category === 'Bills'? 'Bollette' : 
+                                                                          e.category === 'Shopping'? 'Shopping' : 
+                                                                          e.category === 'Entertainment'? 'Intrattenimento' : 'Altro'}</h4>
+                                <p class="text-[14px] font-lato text-brand-medium">${e.description || 'Nessuna descrizione'} • ${formatDate(e.date)}</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <span class="font-poppins font-bold text-brand-dark">${formatCurrency(e.amount)}</span>
+                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button onclick="openEditModal('${e.id}')" class="p-1.5 text-brand-medium hover:text-brand-green hover:bg-green-50 rounded-lg transition-all">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="deleteExpense('${e.id}')" class="p-1.5 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-all">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+            }
+            lucide.createIcons();
+        }
+
+        // Charts
+        function updateCharts() {
+            const now = new Date();
+            
+            const monthExpenses = expenses.filter(e => {
+                const d = new Date(e.date);
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            });
+
+            const categories = ['Food', 'Transport', 'Bills', 'Shopping', 'Entertainment', 'Other'];
+            const labelsIt = ['Cibo', 'Trasporti', 'Bollette', 'Shopping', 'Intrattenimento', 'Altro'];
+            
+            const categoryData = categories.map(cat => 
+                monthExpenses.filter(e => e.category === cat).reduce((sum, e) => sum + Number(e.amount), 0)
+            );
+
+            const legendEl = document.getElementById('category-legend');
+            legendEl.innerHTML = categories.map((cat, i) => {
+                const info = getCategoryInfo(cat);
+                const amount = categoryData[i];
+                return `
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-7 h-7 rounded-lg ${info.bg} ${info.color} flex items-center justify-center border border-brand-light">
+                                <i data-lucide="${info.icon}" class="w-3.5 h-3.5"></i>
+                            </div>
+                            <span class="text-[14px] font-lato text-brand-medium">${labelsIt[i]}</span>
+                        </div>
+                        <span class="text-[14px] font-poppins font-semibold text-brand-dark">${formatCurrency(amount)}</span>
+                    </div>
+                `;
+            }).join('');
+
+            // Chart Colors based on brand (Orange and Green gradients/variations basically, plus some neutrals)
+            const pieColors = ['#E8730F', '#0d5d1a', '#cc2f2f', '#f59e0b', '#4a5f7f', '#1a2332'];
+
+            if (categoryChart) categoryChart.destroy();
+            const ctxPie = document.getElementById('categoryChart').getContext('2d');
+            
+            // Definisce font globali per Chart.js in base al brand
+            Chart.defaults.font.family = "'Lato', sans-serif";
+            Chart.defaults.color = brandColors.medium;
+
+            categoryChart = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: labelsIt,
+                    datasets: [{
+                        data: categoryData,
+                        backgroundColor: pieColors,
+                        borderWidth: 2,
+                        borderColor: brandColors.cream,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 35, 50, 0.95)', // brand dark
+                            titleFont: { family: "'Poppins', sans-serif", size: 14, weight: 'bold' },
+                            bodyFont: { family: "'Lato', sans-serif", size: 14 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: true,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed !== null) {
+                                        label += formatCurrency(context.parsed);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    cutout: '70%',
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+
+            const last7Days = [...Array(7)].map((_, i) => {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                return d.toISOString().split('T')[0];
+            }).reverse();
+
+            const weeklyData = last7Days.map(date => 
+                expenses.filter(e => e.date === date).reduce((sum, e) => sum + Number(e.amount), 0)
+            );
+
+            if (weeklyChart) weeklyChart.destroy();
+            const ctxBar = document.getElementById('weeklyChart').getContext('2d');
+            weeklyChart = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: last7Days.map(d => {
+                        const date = new Date(d);
+                        return date.toLocaleDateString('it-IT', { weekday: 'short' });
+                    }),
+                    datasets: [{
+                        label: 'Spese',
+                        data: weeklyData,
+                        backgroundColor: brandColors.green,
+                        borderRadius: 8,
+                        hoverBackgroundColor: '#0a4a15'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(26, 35, 50, 0.95)',
+                            titleFont: { family: "'Poppins', sans-serif", size: 14, weight: 'bold' },
+                            bodyFont: { family: "'Lato', sans-serif", size: 14 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) label += ': ';
+                                    if (context.parsed.y !== null) {
+                                        label += formatCurrency(context.parsed.y);
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { 
+                            beginAtZero: true, 
+                            grid: { display: false }, 
+                            ticks: { 
+                                callback: value => '€' + value,
+                                font: { family: "'Lato', sans-serif" }
+                            } 
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { font: { family: "'Lato', sans-serif" } }
+                        }
+                    },
+                    hover: {
+                        mode: 'index',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // Helpers
+        function formatCurrency(val) {
+            return new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(val);
+        }
+
+        function formatDate(dateStr) {
+            return new Date(dateStr).toLocaleDateString('it-IT', { month: 'short', day: 'numeric' });
+        }
+
+        function getCategoryInfo(cat) {
+            const categories = {
+                'Food': { icon: 'utensils', bg: 'bg-white', color: 'text-brand-orange' },
+                'Transport': { icon: 'bus', bg: 'bg-white', color: 'text-brand-medium' },
+                'Bills': { icon: 'file-text', bg: 'bg-white', color: 'text-brand-dark' },
+                'Shopping': { icon: 'shopping-cart', bg: 'bg-white', color: 'text-brand-green' },
+                'Entertainment': { icon: 'clapperboard', bg: 'bg-white', color: 'text-brand-red' },
+                'Other': { icon: 'package', bg: 'bg-white', color: 'text-brand-medium' }
+            };
+            return categories[cat] || { icon: 'circle', bg: 'bg-brand-cream', color: 'text-brand-medium' };
+        }
+
+        window.switchTab = (tab) => {
+            currentTab = tab;
+            ['today', 'week', 'month'].forEach(t => {
+                const el = document.getElementById(`tab-${t}`);
+                if (t === tab) {
+                    el.classList.add('border-brand-green', 'text-brand-green');
+                    el.classList.remove('border-transparent', 'text-brand-medium');
+                } else {
+                    el.classList.remove('border-brand-green', 'text-brand-green');
+                    el.classList.add('border-transparent', 'text-brand-medium');
+                }
+            });
+            renderList();
+        };
+
+        window.openEditModal = (id) => {
+            const e = expenses.find(exp => exp.id === id);
+            if (!e) return;
+            document.getElementById('edit-id').value = e.id;
+            document.getElementById('edit-amount').value = e.amount;
+            document.getElementById('edit-category').value = e.category;
+            document.getElementById('edit-date').value = e.date;
+            document.getElementById('edit-description').value = e.description || '';
+            editModal.classList.remove('hidden');
+            lucide.createIcons();
+        };
+
+        window.closeEditModal = () => {
+            editModal.classList.add('hidden');
+        };
+    </script>
+</body>
+</html>
