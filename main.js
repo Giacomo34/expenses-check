@@ -621,10 +621,12 @@ window.switchTab = tab => {
 // =============================================
 // BUDGET SYSTEM
 // =============================================
-function loadBudget() {
+// window.* exposure needed: ES module functions are not global, so
+// HTML onclick="saveBudget()" / onclick="loadBudget()" would fail otherwise.
+const loadBudget = () => {
   try { return JSON.parse(localStorage.getItem('sw_budget') || '{}'); } catch { return {}; }
-}
-function saveBudget() {
+};
+window.saveBudget = function saveBudget() {
   const budget = {};
   const daily = parseFloat(document.getElementById('budget-daily').value);
   const weekly = parseFloat(document.getElementById('budget-weekly').value);
@@ -639,8 +641,8 @@ function saveBudget() {
   localStorage.setItem('sw_budget', JSON.stringify(budget));
   document.getElementById('budget-modal').classList.add('hidden');
   updateUI();
-  showToast('Budget saved!', 'green');
-}
+  showToast('Budget saved! ✓', 'green');
+};
 window.openBudget = () => {
   const b = loadBudget();
   document.getElementById('budget-daily').value = b.daily || '';
