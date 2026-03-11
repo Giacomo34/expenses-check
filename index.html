@@ -1,267 +1,309 @@
 <!DOCTYPE html>
-<html lang="it">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpendWise | Personal Expense Tracker</title>
-    
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Lato:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            orange: '#E8730F',
-                            green: '#0d5d1a',
-                            red: '#cc2f2f',
-                            cream: '#F5F5F2',
-                            dark: '#1a2332',
-                            medium: '#4a5f7f',
-                            light: '#E0E0E0',
-                        }
-                    },
-                    fontFamily: {
-                        poppins: ['Poppins', 'sans-serif'],
-                        lato: ['Lato', 'sans-serif'],
-                        caveat: ['Caveat', 'cursive'],
-                    }
-                }
-            }
-        }
-    </script>
-    
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <style>
-        body { background-color: #F5F5F2; }
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #4a5f7f; }
-        .loader {
-            border: 3px solid #E0E0E0;
-            border-top: 3px solid #E8730F;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpendWise | AI Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Lato:ital,wght@0,400;0,700;1,400&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: { extend: {
+    colors: { brand: { orange:'#E8730F', green:'#0d5d1a', red:'#cc2f2f', cream:'#F5F5F2', dark:'#1a2332', medium:'#4a5f7f', light:'#E0E0E0' } },
+    fontFamily: { poppins:['Poppins','sans-serif'], lato:['Lato','sans-serif'], caveat:['Caveat','cursive'] }
+  }}
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+body{background:#F5F5F2}
+.custom-scrollbar::-webkit-scrollbar{width:6px}
+.custom-scrollbar::-webkit-scrollbar-track{background:transparent}
+.custom-scrollbar::-webkit-scrollbar-thumb{background:#E0E0E0;border-radius:10px}
+.loader{border:3px solid #E0E0E0;border-top:3px solid #E8730F;border-radius:50%;width:24px;height:24px;animation:spin 1s linear infinite}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+.badge-manual{background:#e8f5e9;color:#0d5d1a}
+.badge-statement{background:#fff3e0;color:#E8730F}
+.row-deleted{opacity:0.35;text-decoration:line-through}
+</style>
 </head>
 <body class="font-lato text-brand-dark">
 
-    <!-- Loading Overlay -->
-    <div id="loading-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-brand-cream">
-        <div class="loader mb-4"></div>
-        <p class="text-brand-medium font-medium">Caricamento SpendWise...</p>
-    </div>
+<!-- Loading -->
+<div id="loading-screen" class="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-brand-cream">
+  <div class="loader mb-4"></div>
+  <p class="text-brand-medium font-medium">Loading SpendWise...</p>
+</div>
 
-    <!-- Auth Overlay -->
-    <div id="auth-screen" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-brand-cream">
-        <div class="max-w-md w-full p-8 text-center bg-white rounded-2xl shadow-sm border border-brand-light">
-            <div class="mb-8 flex justify-center">
-                <div class="p-4 bg-brand-green rounded-2xl shadow-sm">
-                    <i data-lucide="wallet" class="w-12 h-12 text-white"></i>
-                </div>
-            </div>
-            <h1 class="text-5xl font-poppins font-bold text-brand-dark mb-2">SpendWise</h1>
-            <p class="text-[18px] text-brand-medium mb-10">Gestisci le tue finanze con precisione italiana.</p>
-            <button id="login-btn" class="w-full flex items-center justify-center gap-3 bg-white border-[3px] border-brand-orange py-4 px-6 rounded-xl font-poppins font-bold text-brand-orange hover:bg-orange-50 transition-all shadow-sm active:scale-[0.98]">
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-6 h-6" alt="Google">
-                Accedi con Google
-            </button>
-            <p class="mt-8 text-[14px] text-brand-medium">Sicurezza garantita da Supabase</p>
+<!-- Auth -->
+<div id="auth-screen" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-brand-cream">
+  <div class="max-w-md w-full p-8 text-center bg-white rounded-2xl shadow-sm border border-brand-light">
+    <div class="mb-8 flex justify-center">
+      <div class="p-4 bg-brand-green rounded-2xl shadow-sm">
+        <i data-lucide="wallet" class="w-12 h-12 text-white"></i>
+      </div>
+    </div>
+    <h1 class="text-5xl font-poppins font-bold text-brand-dark mb-2">SpendWise</h1>
+    <p class="text-[18px] text-brand-medium mb-10">AI-powered expense tracking.</p>
+    <button id="login-btn" class="w-full flex items-center justify-center gap-3 bg-white border-[3px] border-brand-orange py-4 px-6 rounded-xl font-poppins font-bold text-brand-orange hover:bg-orange-50 transition-all shadow-sm active:scale-[0.98]">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/action/google.svg" class="w-6 h-6" alt="Google">
+      Sign in with Google
+    </button>
+    <p class="mt-8 text-[14px] text-brand-medium">Authentication powered by Supabase</p>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+    <div class="p-6 border-b border-brand-light flex justify-between items-center">
+      <h3 class="text-[22px] font-poppins font-semibold text-brand-dark flex items-center gap-2"><i data-lucide="settings-2" class="w-5 h-5 text-brand-orange"></i> Settings</h3>
+      <button onclick="document.getElementById('settings-modal').classList.add('hidden')" class="text-brand-medium hover:text-brand-dark"><i data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <div class="p-6 space-y-5">
+      <div>
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark block mb-1">Vercel AI Gateway API Key</label>
+        <p class="text-[13px] text-brand-medium mb-2">Used for AI-powered bank statement categorisation. Get a key at <a href="https://vercel.com/ai" target="_blank" class="text-brand-orange underline">vercel.com/ai</a>.</p>
+        <input type="password" id="ai-key-input" placeholder="sk-..." class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+      </div>
+      <div>
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark block mb-1">AI Model</label>
+        <select id="ai-model-select" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+          <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash (fast, recommended)</option>
+          <option value="anthropic/claude-3-5-haiku">Claude 3.5 Haiku (fast)</option>
+          <option value="openai/gpt-4o-mini">GPT-4o Mini (fast)</option>
+          <option value="google/gemini-2.5-pro-preview">Gemini 2.5 Pro (powerful)</option>
+        </select>
+      </div>
+      <div>
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark block mb-2">Supabase Configuration</label>
+        <input type="text" id="sb-url-input" placeholder="https://xxxx.supabase.co" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px] mb-2">
+        <input type="password" id="sb-key-input" placeholder="Supabase anon key" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+      </div>
+      <button onclick="saveSettings()" class="w-full bg-brand-green text-white font-poppins font-bold py-3 rounded-xl hover:brightness-110 transition-all text-[16px]">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Statement Review Modal -->
+<div id="review-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:90vh">
+    <div class="p-6 border-b border-brand-light flex justify-between items-center shrink-0">
+      <div>
+        <h3 class="text-[22px] font-poppins font-semibold text-brand-dark">Review Imported Transactions</h3>
+        <p class="text-[13px] text-brand-medium mt-0.5">Verify categories, remove unwanted rows, then import.</p>
+      </div>
+      <button onclick="closeReviewModal()" class="text-brand-medium hover:text-brand-dark"><i data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <div class="flex-1 overflow-auto custom-scrollbar">
+      <table class="w-full text-[14px]">
+        <thead class="bg-brand-cream sticky top-0">
+          <tr>
+            <th class="px-4 py-3 text-left font-poppins font-semibold text-brand-medium w-8"><input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this.checked)" class="rounded"></th>
+            <th class="px-4 py-3 text-left font-poppins font-semibold text-brand-medium">Date</th>
+            <th class="px-4 py-3 text-left font-poppins font-semibold text-brand-medium">Description</th>
+            <th class="px-4 py-3 text-left font-poppins font-semibold text-brand-medium">Amount</th>
+            <th class="px-4 py-3 text-left font-poppins font-semibold text-brand-medium">Category</th>
+            <th class="px-4 py-3 text-left font-poppins font-semibold text-brand-medium w-10"></th>
+          </tr>
+        </thead>
+        <tbody id="review-table-body"></tbody>
+      </table>
+    </div>
+    <div class="p-6 border-t border-brand-light flex gap-3 justify-between items-center shrink-0">
+      <span id="review-count" class="text-[14px] text-brand-medium"></span>
+      <div class="flex gap-3">
+        <button onclick="closeReviewModal()" class="px-6 py-2.5 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light transition-all">Cancel</button>
+        <button onclick="importSelected()" id="import-btn" class="px-6 py-2.5 bg-brand-orange text-white font-poppins font-bold rounded-xl hover:brightness-110 transition-all flex items-center gap-2">
+          <i data-lucide="download" class="w-4 h-4"></i> Import Selected
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+    <div class="p-6 border-b border-brand-light flex justify-between items-center">
+      <h3 class="text-[22px] font-poppins font-semibold text-brand-dark">Edit Expense</h3>
+      <button onclick="closeEditModal()" class="text-brand-medium hover:text-brand-dark"><i data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <form id="edit-form" class="p-6 space-y-4">
+      <input type="hidden" id="edit-id">
+      <div class="space-y-1">
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark">Amount</label>
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+          <input type="number" id="edit-amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
         </div>
-    </div>
+      </div>
+      <div class="space-y-1">
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark">Category</label>
+        <select id="edit-category" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none" id="edit-category"></select>
+      </div>
+      <div class="space-y-1">
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark">Date</label>
+        <input type="date" id="edit-date" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
+      </div>
+      <div class="space-y-1">
+        <label class="text-[15px] font-poppins font-semibold text-brand-dark">Description</label>
+        <input type="text" id="edit-description" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
+      </div>
+      <div class="pt-2 flex gap-3">
+        <button type="button" onclick="closeEditModal()" class="flex-1 py-3 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light transition-all">Cancel</button>
+        <button type="submit" id="update-btn" class="flex-1 py-3 bg-brand-green text-white font-poppins font-bold rounded-xl hover:brightness-110 transition-all">Update</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-    <!-- Main App Layout -->
-    <div id="app-content" class="hidden min-h-screen flex flex-col">
-        <header class="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-brand-light">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="p-1.5 bg-brand-green rounded-lg">
-                        <i data-lucide="wallet" class="w-5 h-5 text-white"></i>
-                    </div>
-                    <span class="font-poppins font-bold text-xl tracking-tight text-brand-dark">SpendWise</span>
-                </div>
-                <div class="flex items-center gap-4">
-                    <div class="hidden sm:flex flex-col items-end">
-                        <span id="user-name" class="text-[16px] font-poppins font-semibold text-brand-dark">Utente</span>
-                        <span id="user-email" class="text-[14px] text-brand-medium">utente@example.com</span>
-                    </div>
-                    <img id="user-photo" src="https://via.placeholder.com/150" class="w-10 h-10 rounded-full border border-brand-light shadow-sm" alt="Avatar">
-                    <button id="logout-btn" class="p-2 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-colors" title="Esci">
-                        <i data-lucide="log-out" class="w-5 h-5"></i>
-                    </button>
-                </div>
-            </div>
-        </header>
-
-        <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="mb-8">
-                <h1 class="text-[48px] font-poppins font-bold text-brand-dark">Ciao <span id="welcome-name"></span>!</h1>
-                <p class="font-caveat text-[24px] text-brand-red mt-1">Ecco il riepilogo delle tue spese.</p>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
-                        <span class="text-[14px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Oggi</span>
-                    </div>
-                    <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-today">€0.00</h3>
-                    <p class="text-[14px] text-brand-medium mt-1">Spese del giorno</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-range" class="w-5 h-5"></i></div>
-                        <span class="text-[14px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Questa Settimana</span>
-                    </div>
-                    <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-week">€0.00</h3>
-                    <p class="text-[14px] text-brand-medium mt-1">Totale settimanale</p>
-                </div>
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
-                    <div class="flex items-center justify-between mb-4">
-                        <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
-                        <span class="text-[14px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Questo Mese</span>
-                    </div>
-                    <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-month">€0.00</h3>
-                    <p class="text-[14px] text-brand-medium mt-1">Budget mensile</p>
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                <div class="lg:col-span-8 space-y-8">
-                    <!-- Add Expense Card -->
-                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
-                        <div class="flex items-center gap-2 mb-6">
-                            <i data-lucide="plus-circle" class="w-6 h-6 text-brand-orange"></i>
-                            <h2 class="text-[36px] font-poppins font-bold text-brand-dark">Aggiungi Spesa</h2>
-                        </div>
-                        <form id="expense-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div class="space-y-1">
-                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Importo</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
-                                    <input type="number" id="amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]" placeholder="0.00">
-                                </div>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Categoria</label>
-                                <select id="category" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]">
-                                    <option value="Food">Cibo</option>
-                                    <option value="Transport">Trasporti</option>
-                                    <option value="Bills">Bollette</option>
-                                    <option value="Shopping">Shopping</option>
-                                    <option value="Entertainment">Intrattenimento</option>
-                                    <option value="Other">Altro</option>
-                                </select>
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Data</label>
-                                <input type="date" id="date" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]">
-                            </div>
-                            <div class="space-y-1">
-                                <label class="text-[16px] font-poppins font-semibold text-brand-dark">Descrizione (Opzionale)</label>
-                                <input type="text" id="description" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none transition-all text-[16px]" placeholder="Per cosa hai speso?">
-                            </div>
-                            <div class="md:col-span-2 pt-4">
-                                <button type="submit" id="save-btn" class="w-full bg-white border-[3px] border-brand-orange text-brand-orange hover:bg-orange-50 font-poppins font-bold py-3 rounded-xl transition-all active:scale-[0.99] flex items-center justify-center gap-2 text-[18px]">
-                                    <i data-lucide="save" class="w-5 h-5"></i>
-                                    Salva Spesa
-                                </button>
-                            </div>
-                        </form>
-                    </section>
-
-                    <!-- Tabs -->
-                    <section class="bg-white rounded-2xl shadow-sm border border-brand-light overflow-hidden">
-                        <div class="flex border-b border-brand-light">
-                            <button onclick="window.switchTab('today')" id="tab-today" class="flex-1 py-4 text-[16px] font-poppins font-bold border-b-2 border-brand-green text-brand-green transition-all">Oggi</button>
-                            <button onclick="window.switchTab('week')" id="tab-week" class="flex-1 py-4 text-[16px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">Questa Settimana</button>
-                            <button onclick="window.switchTab('month')" id="tab-month" class="flex-1 py-4 text-[16px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">Questo Mese</button>
-                        </div>
-                        <div class="p-4 max-h-[500px] overflow-y-auto custom-scrollbar" id="expense-list"></div>
-                    </section>
-                </div>
-
-                <div class="lg:col-span-4 space-y-8">
-                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
-                        <h2 class="text-[24px] font-poppins font-semibold text-brand-dark mb-6">Categorie del Mese</h2>
-                        <div class="aspect-square relative flex items-center justify-center mb-4">
-                            <canvas id="categoryChart"></canvas>
-                        </div>
-                        <div id="category-legend" class="grid grid-cols-2 gap-y-3 gap-x-4 pt-4 border-t border-brand-cream"></div>
-                    </section>
-                    <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
-                        <h2 class="text-[24px] font-poppins font-semibold text-brand-dark mb-6">Andamento Settimanale</h2>
-                        <div class="h-64"><canvas id="weeklyChart"></canvas></div>
-                    </section>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
-        <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-            <div class="p-6 border-b border-brand-light flex justify-between items-center">
-                <h3 class="text-[24px] font-poppins font-semibold text-brand-dark">Modifica Spesa</h3>
-                <button onclick="window.closeEditModal()" class="text-brand-medium hover:text-brand-dark">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            <form id="edit-form" class="p-6 space-y-4">
-                <input type="hidden" id="edit-id">
-                <div class="space-y-1">
-                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Importo</label>
-                    <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
-                        <input type="number" id="edit-amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
-                    </div>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Categoria</label>
-                    <select id="edit-category" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
-                        <option value="Food">Cibo</option>
-                        <option value="Transport">Trasporti</option>
-                        <option value="Bills">Bollette</option>
-                        <option value="Shopping">Shopping</option>
-                        <option value="Entertainment">Intrattenimento</option>
-                        <option value="Other">Altro</option>
-                    </select>
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Data</label>
-                    <input type="date" id="edit-date" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
-                </div>
-                <div class="space-y-1">
-                    <label class="text-[16px] font-poppins font-semibold text-brand-dark">Descrizione</label>
-                    <input type="text" id="edit-description" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none">
-                </div>
-                <div class="pt-4 flex gap-3">
-                    <button type="button" onclick="window.closeEditModal()" class="flex-1 py-3 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light transition-all text-[16px]">Annulla</button>
-                    <button type="submit" id="update-btn" class="flex-1 py-3 bg-brand-green text-white font-poppins font-bold rounded-xl hover:brightness-110 shadow-sm transition-all text-[16px]">Aggiorna</button>
-                </div>
-            </form>
+<!-- Main App -->
+<div id="app-content" class="hidden min-h-screen flex flex-col">
+  <header class="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-brand-light">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="p-1.5 bg-brand-green rounded-lg"><i data-lucide="wallet" class="w-5 h-5 text-white"></i></div>
+        <span class="font-poppins font-bold text-xl tracking-tight text-brand-dark">SpendWise</span>
+        <span class="ml-2 text-[11px] font-poppins font-bold bg-brand-orange text-white px-2 py-0.5 rounded-full">AI</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex flex-col items-end">
+          <span id="user-name" class="text-[15px] font-poppins font-semibold text-brand-dark">User</span>
+          <span id="user-email" class="text-[13px] text-brand-medium">user@example.com</span>
         </div>
+        <img id="user-photo" src="https://ui-avatars.com/api/?background=0d5d1a&color=fff" class="w-9 h-9 rounded-full border border-brand-light" alt="Avatar">
+        <button onclick="openSettings()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="Settings"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
+        <button id="logout-btn" class="p-2 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-colors" title="Sign out"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+      <h1 class="text-[42px] font-poppins font-bold text-brand-dark">Hello <span id="welcome-name"></span>!</h1>
+      <p class="font-caveat text-[22px] text-brand-red mt-1">Here's your expense summary.</p>
     </div>
 
-    <script type="module" src="/main.js"></script>
+    <!-- Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+          <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
+          <span class="text-[13px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Today</span>
+        </div>
+        <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-today">€0.00</h3>
+        <p class="text-[13px] text-brand-medium mt-1">Daily spending</p>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+          <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-range" class="w-5 h-5"></i></div>
+          <span class="text-[13px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">This Week</span>
+        </div>
+        <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-week">€0.00</h3>
+        <p class="text-[13px] text-brand-medium mt-1">Weekly total</p>
+      </div>
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between mb-4">
+          <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-check" class="w-5 h-5"></i></div>
+          <span class="text-[13px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">This Month</span>
+        </div>
+        <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-month">€0.00</h3>
+        <p class="text-[13px] text-brand-medium mt-1">Monthly budget</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Left Column -->
+      <div class="lg:col-span-8 space-y-8">
+
+        <!-- Add Expense -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <div class="flex items-center gap-2 mb-6">
+            <i data-lucide="plus-circle" class="w-6 h-6 text-brand-orange"></i>
+            <h2 class="text-[28px] font-poppins font-bold text-brand-dark">Add Expense</h2>
+          </div>
+          <form id="expense-form" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="space-y-1">
+              <label class="text-[15px] font-poppins font-semibold text-brand-dark">Amount</label>
+              <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+                <input type="number" id="amount" step="0.01" min="0" required class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]" placeholder="0.00">
+              </div>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[15px] font-poppins font-semibold text-brand-dark">Category</label>
+              <select id="category" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]"></select>
+            </div>
+            <div class="space-y-1">
+              <label class="text-[15px] font-poppins font-semibold text-brand-dark">Date</label>
+              <input type="date" id="date" required class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+            </div>
+            <div class="space-y-1">
+              <label class="text-[15px] font-poppins font-semibold text-brand-dark">Description
+                <span id="suggestion-hint" class="hidden ml-2 text-[11px] font-normal text-brand-orange">💡 Category suggested from history</span>
+              </label>
+              <input type="text" id="description" class="w-full px-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]" placeholder="What did you spend on?">
+            </div>
+            <div class="md:col-span-2 pt-2">
+              <button type="submit" id="save-btn" class="w-full bg-white border-[3px] border-brand-orange text-brand-orange hover:bg-orange-50 font-poppins font-bold py-3 rounded-xl transition-all active:scale-[0.99] flex items-center justify-center gap-2 text-[17px]">
+                <i data-lucide="save" class="w-5 h-5"></i> Save Expense
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Import Bank Statement -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <div class="flex items-center gap-2 mb-2">
+            <i data-lucide="file-up" class="w-6 h-6 text-brand-orange"></i>
+            <h2 class="text-[28px] font-poppins font-bold text-brand-dark">Import Bank Statement</h2>
+          </div>
+          <p class="text-[14px] text-brand-medium mb-5">Upload a CSV or TXT export from your bank. AI will automatically read, categorise, and let you review each transaction before saving.</p>
+          <div id="drop-zone" class="border-2 border-dashed border-brand-light rounded-xl p-8 text-center hover:border-brand-orange hover:bg-orange-50/30 transition-all cursor-pointer" onclick="document.getElementById('file-input').click()" ondragover="event.preventDefault();this.classList.add('border-brand-orange')" ondrop="handleDrop(event)">
+            <i data-lucide="upload-cloud" class="w-10 h-10 text-brand-medium mx-auto mb-3"></i>
+            <p class="font-poppins font-semibold text-brand-dark">Drop your file here or <span class="text-brand-orange">browse</span></p>
+            <p class="text-[13px] text-brand-medium mt-1">Supports CSV, TXT — max 5MB</p>
+            <input type="file" id="file-input" accept=".csv,.txt" class="hidden" onchange="handleFileSelect(this)">
+          </div>
+          <div id="import-status" class="hidden mt-4 flex items-center gap-3 text-brand-medium">
+            <div class="loader" style="width:18px;height:18px;border-width:2px"></div>
+            <span id="import-status-text">Processing with AI...</span>
+          </div>
+        </section>
+
+        <!-- Expense List -->
+        <section class="bg-white rounded-2xl shadow-sm border border-brand-light overflow-hidden">
+          <div class="flex border-b border-brand-light">
+            <button onclick="switchTab('today')" id="tab-today" class="flex-1 py-4 text-[15px] font-poppins font-bold border-b-2 border-brand-green text-brand-green transition-all">Today</button>
+            <button onclick="switchTab('week')" id="tab-week" class="flex-1 py-4 text-[15px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">This Week</button>
+            <button onclick="switchTab('month')" id="tab-month" class="flex-1 py-4 text-[15px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">This Month</button>
+            <button onclick="switchTab('all')" id="tab-all" class="flex-1 py-4 text-[15px] font-poppins font-bold border-b-2 border-transparent text-brand-medium hover:text-brand-dark transition-all">All</button>
+          </div>
+          <div class="p-4 max-h-[520px] overflow-y-auto custom-scrollbar" id="expense-list"></div>
+        </section>
+      </div>
+
+      <!-- Right Column -->
+      <div class="lg:col-span-4 space-y-8">
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">Monthly Categories</h2>
+          <div class="aspect-square relative flex items-center justify-center mb-4">
+            <canvas id="categoryChart"></canvas>
+          </div>
+          <div id="category-legend" class="grid grid-cols-2 gap-y-3 gap-x-4 pt-4 border-t border-brand-cream"></div>
+        </section>
+        <section class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light">
+          <h2 class="text-[22px] font-poppins font-semibold text-brand-dark mb-6">Weekly Trend</h2>
+          <div class="h-64"><canvas id="weeklyChart"></canvas></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="app.js"></script>
 </body>
 </html>
