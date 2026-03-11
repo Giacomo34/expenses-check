@@ -447,20 +447,39 @@ function updateUI() {
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
+  // Only count expenses (not income) for budget comparison
+  const sumExp = arr => arr.reduce((s, e) => !isIncome(e.category) ? s + Number(e.amount) : s, 0);
   const net = arr => arr.reduce((s, e) => isIncome(e.category) ? s + Number(e.amount) : s - Number(e.amount), 0);
-  const fmtNet = v => (v >= 0 ? '+' : '') + fmt(Math.abs(v));
-  const netToday = net(expenses.filter(e => e.date === todayStr));
-  const netWeek = net(expenses.filter(e => new Date(e.date) >= startOfWeek));
-  const netMonth = net(expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }));
+  const fmtNet = v => (v >= 0 ? '+' : '-') + fmt(Math.abs(v));
+  const todayArr = expenses.filter(e => e.date === todayStr);
+  const weekArr = expenses.filter(e => new Date(e.date) >= startOfWeek);
+  const monthArr = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  const netToday = net(todayArr); const spentToday = sumExp(todayArr);
+  const netWeek  = net(weekArr);  const spentWeek  = sumExp(weekArr);
+  const netMonth = net(monthArr); const spentMonth = sumExp(monthArr);
   const statToday = document.getElementById('stat-today');
-  const statWeek = document.getElementById('stat-week');
+  const statWeek  = document.getElementById('stat-week');
   const statMonth = document.getElementById('stat-month');
   statToday.textContent = fmtNet(netToday);
-  statToday.className = `text-4xl font-poppins font-bold ${netToday >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
+  statToday.className = `text-4xl font-poppins font-bold mb-1 ${netToday >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
   statWeek.textContent = fmtNet(netWeek);
-  statWeek.className = `text-4xl font-poppins font-bold ${netWeek >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
+  statWeek.className = `text-4xl font-poppins font-bold mb-1 ${netWeek >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
   statMonth.textContent = fmtNet(netMonth);
-  statMonth.className = `text-4xl font-poppins font-bold ${netMonth >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
+  statMonth.className = `text-4xl font-poppins font-bold mb-1 ${netMonth >= 0 ? 'text-brand-green' : 'text-brand-dark'}`;
+  // Budget indicators in stat cards
+  const b = loadBudget();
+  function renderStatBudget(elId, spent, budgetVal) {
+    const el = document.getElementById(elId);
+    if (!budgetVal || !el) { el && el.classList.add('hidden'); return; }
+    const pct = Math.min(100, (spent / budgetVal) * 100);
+    const over = spent > budgetVal;
+    const remaining = budgetVal - spent;
+    el.classList.remove('hidden');
+    el.innerHTML = `<div class="progress-bar mb-1"><div class="progress-fill ${over ? 'bg-brand-red' : 'bg-brand-green'}" style="width:${pct}%"></div></div><p class="text-[11px] font-poppins ${over ? 'text-brand-red font-bold' : 'text-brand-medium'}">${over ? 'Over budget by ' + fmt(Math.abs(remaining)) : fmt(remaining) + ' remaining'} of ${fmt(budgetVal)}</p>`;
+  }
+  renderStatBudget('stat-today-budget', spentToday, b.daily);
+  renderStatBudget('stat-week-budget', spentWeek, b.weekly);
+  renderStatBudget('stat-month-budget', spentMonth, b.monthly || b._total);
   renderList(); updateCharts(); lucide.createIcons();
 }
 
@@ -607,20 +626,26 @@ function loadBudget() {
 }
 function saveBudget() {
   const budget = {};
-  const total = parseFloat(document.getElementById('total-budget-input').value);
-  if (total > 0) budget._total = total;
+  const daily = parseFloat(document.getElementById('budget-daily').value);
+  const weekly = parseFloat(document.getElementById('budget-weekly').value);
+  const monthly = parseFloat(document.getElementById('budget-monthly').value);
+  if (daily > 0) budget.daily = daily;
+  if (weekly > 0) budget.weekly = weekly;
+  if (monthly > 0) budget.monthly = monthly;
   EXPENSE_CATS.forEach(c => {
     const v = parseFloat(document.getElementById(`budget-cat-${c.replace(/[^a-z0-9]/gi,'_')}`).value);
     if (v > 0) budget[c] = v;
   });
   localStorage.setItem('sw_budget', JSON.stringify(budget));
   document.getElementById('budget-modal').classList.add('hidden');
-  renderBudgetBars();
+  updateUI();
   showToast('Budget saved!', 'green');
 }
 window.openBudget = () => {
   const b = loadBudget();
-  document.getElementById('total-budget-input').value = b._total || '';
+  document.getElementById('budget-daily').value = b.daily || '';
+  document.getElementById('budget-weekly').value = b.weekly || '';
+  document.getElementById('budget-monthly').value = b.monthly || '';
   // Build per-category inputs
   document.getElementById('cat-budget-inputs').innerHTML = EXPENSE_CATS.map(c => {
     const id = `budget-cat-${c.replace(/[^a-z0-9]/gi,'_')}`;

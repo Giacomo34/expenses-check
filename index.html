@@ -210,20 +210,36 @@ body{background:#F5F5F2}
 
 <!-- Budget Modal -->
 <div id="budget-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-brand-dark/40 backdrop-blur-sm">
-  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh">
+  <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:90vh">
     <div class="p-6 border-b border-brand-light flex justify-between items-center shrink-0">
-      <h3 class="text-[22px] font-poppins font-semibold text-brand-dark flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-brand-orange"></i> Monthly Budget</h3>
+      <h3 class="text-[22px] font-poppins font-semibold text-brand-dark flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-brand-orange"></i> Set Budget</h3>
       <button onclick="document.getElementById('budget-modal').classList.add('hidden')" class="text-brand-medium hover:text-brand-dark"><i data-lucide="x" class="w-6 h-6"></i></button>
     </div>
-    <div class="flex-1 overflow-auto custom-scrollbar p-6 space-y-4">
-      <div>
-        <label class="text-[15px] font-poppins font-semibold text-brand-dark block mb-1">Total Monthly Budget</label>
+    <div class="flex-1 overflow-auto custom-scrollbar p-6 space-y-5">
+      <p class="text-[13px] text-brand-medium bg-brand-cream rounded-xl p-3">Set a spending limit per period. The stat cards will show how much you have left. Leave empty to skip a period.</p>
+      <!-- Period budgets -->
+      <div class="space-y-3">
+        <h4 class="font-poppins font-semibold text-brand-dark text-[15px] flex items-center gap-2"><i data-lucide="calendar-days" class="w-4 h-4 text-brand-green"></i> Daily Budget</h4>
         <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
-          <input type="number" id="total-budget-input" step="50" min="0" placeholder="e.g. 2000" class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+          <input type="number" id="budget-daily" step="5" min="0" placeholder="e.g. 50" class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
         </div>
       </div>
-      <p class="text-[13px] text-brand-medium">Or set per-category budgets (optional):</p>
-      <div id="cat-budget-inputs" class="space-y-3"></div>
+      <div class="space-y-3">
+        <h4 class="font-poppins font-semibold text-brand-dark text-[15px] flex items-center gap-2"><i data-lucide="calendar-range" class="w-4 h-4 text-brand-green"></i> Weekly Budget</h4>
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+          <input type="number" id="budget-weekly" step="10" min="0" placeholder="e.g. 300" class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+        </div>
+      </div>
+      <div class="space-y-3">
+        <h4 class="font-poppins font-semibold text-brand-dark text-[15px] flex items-center gap-2"><i data-lucide="calendar-check" class="w-4 h-4 text-brand-green"></i> Monthly Budget</h4>
+        <div class="relative"><span class="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium">€</span>
+          <input type="number" id="budget-monthly" step="50" min="0" placeholder="e.g. 1500" class="w-full pl-8 pr-4 py-2.5 bg-brand-cream border border-brand-light rounded-xl focus:ring-2 focus:ring-brand-orange outline-none text-[15px]">
+        </div>
+      </div>
+      <div class="border-t border-brand-light pt-4">
+        <p class="text-[13px] font-poppins font-semibold text-brand-dark mb-3">Category limits (monthly):</p>
+        <div id="cat-budget-inputs" class="space-y-3"></div>
+      </div>
     </div>
     <div class="p-6 border-t border-brand-light shrink-0 flex gap-3">
       <button onclick="document.getElementById('budget-modal').classList.add('hidden')" class="px-5 py-2.5 bg-brand-cream text-brand-dark font-poppins font-bold rounded-xl hover:bg-brand-light">Cancel</button>
@@ -297,31 +313,58 @@ body{background:#F5F5F2}
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-3">
           <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-days" class="w-5 h-5"></i></div>
           <span class="text-[13px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">Today</span>
         </div>
-        <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-today">€0.00</h3>
-        <p class="text-[13px] text-brand-medium mt-1">Daily spending</p>
+        <h3 class="text-4xl font-poppins font-bold text-brand-dark mb-1" id="stat-today">€0.00</h3>
+        <p class="text-[12px] text-brand-medium" id="stat-today-sub">Daily net balance</p>
+        <div id="stat-today-budget" class="hidden mt-2"></div>
       </div>
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-3">
           <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-range" class="w-5 h-5"></i></div>
           <span class="text-[13px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">This Week</span>
         </div>
-        <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-week">€0.00</h3>
-        <p class="text-[13px] text-brand-medium mt-1">Weekly total</p>
+        <h3 class="text-4xl font-poppins font-bold text-brand-dark mb-1" id="stat-week">€0.00</h3>
+        <p class="text-[12px] text-brand-medium" id="stat-week-sub">Weekly net balance</p>
+        <div id="stat-week-budget" class="hidden mt-2"></div>
       </div>
       <div class="bg-white p-6 rounded-2xl shadow-sm border border-brand-light hover:shadow-md transition-shadow">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-between mb-3">
           <div class="p-2 bg-green-50 text-brand-green rounded-lg"><i data-lucide="calendar-check" class="w-5 h-5"></i></div>
           <span class="text-[13px] font-poppins font-semibold text-brand-medium uppercase tracking-wider">This Month</span>
         </div>
-        <h3 class="text-4xl font-poppins font-bold text-brand-dark" id="stat-month">€0.00</h3>
-        <p class="text-[13px] text-brand-medium mt-1">Monthly budget</p>
+        <h3 class="text-4xl font-poppins font-bold text-brand-dark mb-1" id="stat-month">€0.00</h3>
+        <p class="text-[12px] text-brand-medium" id="stat-month-sub">Monthly net balance</p>
+        <div id="stat-month-budget" class="hidden mt-2"></div>
       </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+      <button onclick="openAdvisor()" class="flex items-center gap-4 p-5 bg-gradient-to-r from-brand-orange to-orange-400 text-white rounded-2xl shadow-sm hover:shadow-md hover:brightness-110 transition-all active:scale-[0.98] text-left">
+        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+          <i data-lucide="bot" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="font-poppins font-bold text-[16px]">Ask AI Advisor</p>
+          <p class="text-[12px] opacity-80 mt-0.5">Get tips to reduce spending</p>
+        </div>
+        <i data-lucide="chevron-right" class="w-5 h-5 ml-auto opacity-70"></i>
+      </button>
+      <button onclick="openBudget()" class="flex items-center gap-4 p-5 bg-gradient-to-r from-brand-green to-emerald-500 text-white rounded-2xl shadow-sm hover:shadow-md hover:brightness-110 transition-all active:scale-[0.98] text-left">
+        <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+          <i data-lucide="target" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <p class="font-poppins font-bold text-[16px]">Set Budget</p>
+          <p class="text-[12px] opacity-80 mt-0.5">Daily, weekly &amp; monthly limits</p>
+        </div>
+        <i data-lucide="chevron-right" class="w-5 h-5 ml-auto opacity-70"></i>
+      </button>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
