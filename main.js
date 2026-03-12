@@ -89,11 +89,13 @@ function initSupabase() {
 // =============================================
 // POPULATE CATEGORY DROPDOWNS
 // =============================================
-function buildCategoryOptions(selectEl, selectedVal) {
-  if (!selectEl) return;
-  selectEl.innerHTML = CAT_NAMES.map(c =>
-    `<option value="${c}" ${c === selectedVal ? 'selected' : ''}>${c}</option>`
-  ).join('');
+function initCategoryDropdowns() {
+  const currentCats = getContextCats('expense').concat(getContextCats('income'));
+  const catOptions = currentCats.map(c => `<option value="${c}">${c}</option>`).join('');
+  const catSelect = document.getElementById('category');
+  if (catSelect) catSelect.innerHTML = catOptions;
+  const editCatSelect = document.getElementById('edit-category');
+  if (editCatSelect) editCatSelect.innerHTML = catOptions;
 }
 
 // =============================================
@@ -102,8 +104,7 @@ function buildCategoryOptions(selectEl, selectedVal) {
 window.onload = async () => {
   lucide.createIcons();
   initSupabase();
-  buildCategoryOptions(document.getElementById('category'), 'Food & Dining');
-  buildCategoryOptions(document.getElementById('edit-category'), 'Food & Dining');
+  initCategoryDropdowns();
   document.getElementById('date').valueAsDate = new Date();
 
   // Show AI key status in settings
