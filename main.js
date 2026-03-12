@@ -520,6 +520,29 @@ function updateUI() {
   renderStatBudget('stat-today-budget', spentToday, b.daily);
   renderStatBudget('stat-week-budget', spentWeek, b.weekly);
   renderStatBudget('stat-month-budget', spentMonth, b.monthly || b._total);
+  
+  // Business KPIs
+  const bizKpisEl = document.getElementById('business-kpis');
+  if (bizKpisEl) {
+    if (window.currentContext === 'business') {
+      bizKpisEl.classList.remove('hidden');
+      const grossRev = netMonth + spentMonth;
+      const taxable = grossRev * 0.70;
+      const taxes = taxable * 0.05;
+      const netProfit = grossRev - spentMonth - taxes;
+      const margin = grossRev > 0 ? ((netProfit / grossRev) * 100).toFixed(1) : 0;
+      
+      document.getElementById('kpi-revenue').textContent = '€' + fmt(grossRev);
+      document.getElementById('kpi-profit').textContent = '€' + fmt(netProfit);
+      document.getElementById('kpi-margin').textContent = margin + '%';
+      
+      const profitEl = document.getElementById('kpi-profit');
+      profitEl.className = `text-3xl font-poppins font-bold mb-1 ${netProfit >= 0 ? 'text-emerald-700' : 'text-brand-red'}`;
+    } else {
+      bizKpisEl.classList.add('hidden');
+    }
+  }
+
   renderList(); updateCharts(); lucide.createIcons();
 }
 

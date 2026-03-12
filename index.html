@@ -350,6 +350,30 @@ body{background:#F5F5F2}
       </div>
     </div>
 
+    <!-- Business KPIs (Hidden by default) -->
+    <div id="business-kpis" class="hidden mb-8">
+      <h2 class="text-[20px] font-poppins font-bold text-brand-dark mb-4 flex items-center gap-2">
+        <i data-lucide="briefcase" class="w-5 h-5 text-blue-700"></i> Business Performance (This Month)
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-blue-50/50 p-6 rounded-2xl shadow-sm border border-blue-200">
+          <p class="text-[13px] font-poppins font-semibold text-blue-800 uppercase tracking-wider mb-1">Gross Revenue</p>
+          <h3 class="text-3xl font-poppins font-bold text-brand-dark mb-1" id="kpi-revenue">€0.00</h3>
+          <p class="text-[12px] text-brand-medium">Total income before costs</p>
+        </div>
+        <div class="bg-emerald-50/50 p-6 rounded-2xl shadow-sm border border-emerald-200">
+          <p class="text-[13px] font-poppins font-semibold text-emerald-800 uppercase tracking-wider mb-1">Net Profit (Post-Tax)</p>
+          <h3 class="text-3xl font-poppins font-bold text-brand-dark mb-1" id="kpi-profit">€0.00</h3>
+          <p class="text-[12px] text-brand-medium">After costs & 5% Start-up Tax</p>
+        </div>
+        <div class="bg-purple-50/50 p-6 rounded-2xl shadow-sm border border-purple-200">
+          <p class="text-[13px] font-poppins font-semibold text-purple-800 uppercase tracking-wider mb-1">Profit Margin</p>
+          <h3 class="text-3xl font-poppins font-bold text-brand-dark mb-1" id="kpi-margin">0%</h3>
+          <p class="text-[12px] text-brand-medium">Return on Sales (ROS)</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
       <button onclick="openAdvisor()" class="flex items-center gap-4 p-5 bg-gradient-to-r from-brand-orange to-orange-400 text-white rounded-2xl shadow-sm hover:shadow-md hover:brightness-110 transition-all active:scale-[0.98] text-left">
