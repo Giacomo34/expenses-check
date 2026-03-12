@@ -490,7 +490,7 @@ function updateUI() {
   // Only count expenses (not income) for budget comparison
   const sumExp = arr => arr.reduce((s, e) => !isIncome(e.category) ? s + Number(e.amount) : s, 0);
   const net = arr => arr.reduce((s, e) => isIncome(e.category) ? s + Number(e.amount) : s - Number(e.amount), 0);
-  const fmtNet = v => (v >= 0 ? '+€' : '-€') + fmt(Math.abs(v));
+  const fmtNet = v => (v >= 0 ? '+' : '-') + fmt(Math.abs(v)).replace('€', '').trim() + ' €';
   const todayArr = ctxExpenses.filter(e => e.date === todayStr);
   const weekArr = ctxExpenses.filter(e => new Date(e.date) >= startOfWeek);
   const monthArr = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
