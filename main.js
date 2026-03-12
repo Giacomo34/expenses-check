@@ -490,7 +490,7 @@ function updateUI() {
   // Only count expenses (not income) for budget comparison
   const sumExp = arr => arr.reduce((s, e) => !isIncome(e.category) ? s + Number(e.amount) : s, 0);
   const net = arr => arr.reduce((s, e) => isIncome(e.category) ? s + Number(e.amount) : s - Number(e.amount), 0);
-  const fmtNet = v => (v >= 0 ? '+' : '-') + fmt(Math.abs(v));
+  const fmtNet = v => (v >= 0 ? '+€' : '-€') + fmt(Math.abs(v));
   const todayArr = ctxExpenses.filter(e => e.date === todayStr);
   const weekArr = ctxExpenses.filter(e => new Date(e.date) >= startOfWeek);
   const monthArr = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
@@ -526,10 +526,21 @@ function updateUI() {
   if (bizKpisEl) {
     if (window.currentContext === 'business') {
       bizKpisEl.classList.remove('hidden');
-      const grossRev = netMonth + spentMonth;
-      const taxable = grossRev * 0.70;
-      const taxes = taxable * 0.05;
-      const netProfit = grossRev - spentMonth - taxes;
+      const incMonthArr = monthArr.filter(e => isIncome(e.category));
+      const expMonthArr = monthArr.filter(e => !isIncome(e.category));
+      const grossRev = incMonthArr.reduce((s, e) => s + Number(e.amount), 0);
+      const actualExp = expMonthArr.reduce((s, e) => s + Number(e.amount), 0);
+      
+      const coeff = 0.78;
+      const redditoForfettario = grossRev * coeff;
+      const inpsAliquota = 0.2607;
+      const inpsPieni = redditoForfettario * inpsAliquota;
+      const inpsDovuti = inpsPieni * 0.70; // Sconto 30%
+      const imponibileFiscale = redditoForfettario - inpsDovuti;
+      const impostaSostitutiva = imponibileFiscale * 0.05; // Startup 5%
+      
+      const totaleTasseInps = inpsDovuti + impostaSostitutiva;
+      const netProfit = grossRev - totaleTasseInps - actualExp;
       const margin = grossRev > 0 ? ((netProfit / grossRev) * 100).toFixed(1) : 0;
       
       document.getElementById('kpi-revenue').textContent = '€' + fmt(grossRev);
@@ -547,10 +558,11 @@ function updateUI() {
 }
 
 function renderList() {
+  const ctxExpenses = expenses.filter(e => e.context === window.currentContext || (!e.context && window.currentContext === 'personal'));
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
-  const sorted = [...expenses].sort((a, b) => b.date.localeCompare(a.date) || new Date(b.created_at) - new Date(a.created_at));
+  const sorted = [...ctxExpenses].sort((a, b) => b.date.localeCompare(a.date) || new Date(b.created_at) - new Date(a.created_at));
   let filtered = sorted;
   if (currentTab === 'today') filtered = sorted.filter(e => e.date === todayStr);
   else if (currentTab === 'week') filtered = sorted.filter(e => new Date(e.date) >= startOfWeek);
@@ -566,8 +578,8 @@ function renderList() {
         ? `<span class="badge-statement text-[10px] font-poppins font-bold px-1.5 py-0.5 rounded ml-1">stmt</span>`
         : `<span class="badge-manual text-[10px] font-poppins font-bold px-1.5 py-0.5 rounded ml-1">manual</span>`;
       const amountStr = income
-        ? `<span class="font-poppins font-bold text-brand-green">+${fmt(e.amount)}</span>`
-        : `<span class="font-poppins font-bold text-brand-dark">${fmt(e.amount)}</span>`;
+        ? `<span class="font-poppins font-bold text-brand-green">+€${fmt(e.amount)}</span>`
+        : `<span class="font-poppins font-bold text-brand-dark">-€${fmt(e.amount)}</span>`;
       return `<div class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border ${income ? 'border-green-100' : 'border-brand-light'} hover:border-brand-green hover:shadow-sm transition-all group">
         <div class="flex items-center gap-4">
           <div class="w-10 h-10 rounded-xl ${ci.bg} ${ci.color} flex items-center justify-center shadow-sm shrink-0">
@@ -836,16 +848,28 @@ window.askAIAdvisor = async () => {
   const isBiz = window.currentContext === 'business';
   let taxInstruction = '';
   if (isBiz) {
-    // Regime forfettario start up
-    const taxable = totalInc * 0.70;
-    const taxes = taxable * 0.05;
-    const netProfit = totalInc - totalExp - taxes;
+    const coeff = 0.78;
+    const redditoForfettario = totalInc * coeff;
+    const inpsAliquota = 0.2607;
+    const inpsPieni = redditoForfettario * inpsAliquota;
+    const inpsDovuti = inpsPieni * 0.70; // Sconto 30%
+    const imponibileFiscale = redditoForfettario - inpsDovuti;
+    const impostaSostitutiva = imponibileFiscale * 0.05; // Startup 5%
+    
+    const totaleTasseInps = inpsDovuti + impostaSostitutiva;
+    const netProfit = totalInc - totaleTasseInps - totalExp;
     const margin = totalInc > 0 ? ((netProfit / totalInc) * 100).toFixed(1) : 0;
+    
     taxInstruction = `
-- **Business mode active (Italy On Demand):** Calculate ROI, Profit Margins, and Taxes.
-- **Taxes (Regime Forfettario Start-up):** Taxes are 5% of the taxable income. Taxable income is calculated as "Total Income * 0.70" (a 30% reduction).
-- Based on the data, the estimated taxes are €${taxes.toFixed(2)}, making the net profit €${netProfit.toFixed(2)} (Margin: ${margin}%).
-- Include a specific section on ROI, profit margins, and estimated taxes for the business.`;
+- **Business KPIs Active:** Calculate specific KPIs including ROI, Profit Margin, and Italian Taxes.
+- **Taxes Calculation (Italy Forfettario Start-up):**
+   - Coefficiente Redditività: 78% of Revenue (€${redditoForfettario.toFixed(2)})
+   - INPS (Gestione Separata, 26.07% reduced by 30%): €${inpsDovuti.toFixed(2)}
+   - Imponibile Fiscale (after INPS): €${imponibileFiscale.toFixed(2)}
+   - Imposta Sostitutiva (5%): €${impostaSostitutiva.toFixed(2)}
+   - **Total Taxes & INPS:** €${totaleTasseInps.toFixed(2)}
+- Based on the data, the true net profit (after Taxes, INPS, and actual Expenses) is €${netProfit.toFixed(2)} (Margin: ${margin}%).
+- Breakdown these KPIs (Revenue, Taxes+INPS, Net Profit, Margin) to the user clearly so they know exactly what stays in their pocket.`;
   }
   
   const prompt = `You are a financial and business advisor. Analyse the following financial data and provide:
