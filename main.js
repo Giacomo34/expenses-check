@@ -181,7 +181,7 @@ async function loadExpenses() {
 }
 
 // =============================================
-// ADD EXPENSE FORM
+// ADD TRANSACTION FORM
 // =============================================
 document.getElementById('expense-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -199,7 +199,7 @@ document.getElementById('expense-form').addEventListener('submit', async e => {
     context: window.currentContext,
   };
   const { data, error } = await supabase.from('expenses').insert([newExp]).select();
-  btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Save Expense';
+  btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Save Transaction';
   btn.disabled = false;
   if (error) { showToast('Error saving expense.', 'red'); console.error(error); return; }
   if (data?.[0]) {
@@ -208,7 +208,7 @@ document.getElementById('expense-form').addEventListener('submit', async e => {
     e.target.reset();
     document.getElementById('date').valueAsDate = new Date();
     document.getElementById('suggestion-hint').classList.add('hidden');
-    showToast('Expense saved!', 'green');
+    showToast('Transaction saved!', 'green');
   }
   lucide.createIcons();
 });
@@ -226,7 +226,7 @@ document.getElementById('description').addEventListener('input', function () {
 });
 
 // =============================================
-// EDIT EXPENSE
+// EDIT TRANSACTION
 // =============================================
 document.getElementById('edit-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -809,15 +809,32 @@ window.askAIAdvisor = async () => {
   const budget = loadBudget();
   const budgetStr = budget._total ? `Monthly budget set: €${budget._total}` : 'No monthly budget set';
   const catStr = byCat.map(x => `  - ${x.cat}: €${x.spent.toFixed(2)}`).join('\n');
-  const prompt = `You are a personal finance advisor. Analyse the following spending data and provide:
+  
+  const isBiz = window.currentContext === 'business';
+  let taxInstruction = '';
+  if (isBiz) {
+    // Regime forfettario start up
+    const taxable = totalInc * 0.70;
+    const taxes = taxable * 0.05;
+    const netProfit = totalInc - totalExp - taxes;
+    const margin = totalInc > 0 ? ((netProfit / totalInc) * 100).toFixed(1) : 0;
+    taxInstruction = `
+- **Business mode active (Italy On Demand):** Calculate ROI, Profit Margins, and Taxes.
+- **Taxes (Regime Forfettario Start-up):** Taxes are 5% of the taxable income. Taxable income is calculated as "Total Income * 0.70" (a 30% reduction).
+- Based on the data, the estimated taxes are €${taxes.toFixed(2)}, making the net profit €${netProfit.toFixed(2)} (Margin: ${margin}%).
+- Include a specific section on ROI, profit margins, and estimated taxes for the business.`;
+  }
+  
+  const prompt = `You are a financial and business advisor. Analyse the following financial data and provide:
 1. A brief summary of the user's financial health (2-3 sentences)
-2. The top 3 concrete actionable tips to reduce expenses
-3. One specific category where they can save the most money and how
+2. The top 3 concrete actionable tips to improve finances or reduce costs
+3. One specific category where they can optimize the most money and how${taxInstruction}
 
-Spending data (last 30 days):
+Financial data (last 30 days):
+- Context: ${isBiz ? 'Business (Italy On Demand)' : 'Personal'}
 - Total income: €${totalInc.toFixed(2)}
 - Total expenses: €${totalExp.toFixed(2)}
-- Net balance: €${(totalInc - totalExp).toFixed(2)}
+- Net balance (before taxes): €${(totalInc - totalExp).toFixed(2)}
 - ${budgetStr}
 - Expenses by category:
 ${catStr}
