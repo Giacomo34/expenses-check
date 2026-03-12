@@ -288,19 +288,28 @@ body{background:#F5F5F2}
   <header class="sticky top-0 z-40 w-full bg-white/90 backdrop-blur-md border-b border-brand-light">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-2">
-        <div class="p-1.5 bg-brand-green rounded-lg"><i data-lucide="wallet" class="w-5 h-5 text-white"></i></div>
-        <span class="font-poppins font-bold text-xl tracking-tight text-brand-dark">SpendWise</span>
+        <div class="p-1.5 bg-brand-green rounded-lg transition-colors" id="brand-icon-bg"><i data-lucide="wallet" class="w-5 h-5 text-white"></i></div>
+        <span class="font-poppins font-bold text-xl tracking-tight text-brand-dark" id="brand-title">SpendWise</span>
         <span class="ml-2 text-[11px] font-poppins font-bold bg-brand-orange text-white px-2 py-0.5 rounded-full">AI</span>
       </div>
+      
+      <!-- Context Switcher -->
+      <div class="hidden md:flex items-center bg-brand-cream border border-brand-light rounded-xl p-1 mx-4">
+        <button onclick="switchContext('personal')" id="ctx-btn-personal" class="px-4 py-1.5 rounded-lg text-[13px] font-poppins font-bold bg-white text-brand-dark shadow-sm transition-all focus:outline-none">Personal</button>
+        <button onclick="switchContext('business')" id="ctx-btn-business" class="px-4 py-1.5 rounded-lg text-[13px] font-poppins font-semibold text-brand-medium hover:text-brand-dark transition-all focus:outline-none">Italy On Demand</button>
+      </div>
+
       <div class="flex items-center gap-3">
         <div class="hidden sm:flex flex-col items-end">
           <span id="user-name" class="text-[15px] font-poppins font-semibold text-brand-dark">User</span>
           <span id="user-email" class="text-[13px] text-brand-medium">user@example.com</span>
         </div>
-        <img id="user-photo" src="https://ui-avatars.com/api/?background=0d5d1a&color=fff" class="w-9 h-9 rounded-full border border-brand-light" alt="Avatar">
+        <img id="user-photo" src="https://ui-avatars.com/api/?background=0d5d1a&color=fff" class="w-9 h-9 rounded-full border border-brand-light transition-all" alt="Avatar">
         <button onclick="openAdvisor()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="AI Advisor"><i data-lucide="bot" class="w-5 h-5"></i></button>
         <button onclick="openBudget()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="Budget"><i data-lucide="target" class="w-5 h-5"></i></button>
         <button onclick="openSettings()" class="p-2 text-brand-medium hover:text-brand-orange hover:bg-orange-50 rounded-lg transition-colors" title="Settings"><i data-lucide="settings-2" class="w-5 h-5"></i></button>
+        <button id="logout-btn" class="p-2 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-colors" title="Sign out"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+      </div>
         <button id="logout-btn" class="p-2 text-brand-medium hover:text-brand-red hover:bg-red-50 rounded-lg transition-colors" title="Sign out"><i data-lucide="log-out" class="w-5 h-5"></i></button>
       </div>
     </div>

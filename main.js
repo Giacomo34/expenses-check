@@ -398,6 +398,7 @@ window.closeReviewModal = () => {
 };
 function renderReviewTable() {
   const body = document.getElementById('review-table-body');
+  const currentCats = getContextCats('expense').concat(getContextCats('income'));
   body.innerHTML = pendingRows.map(row => `
     <tr class="${row._deleted ? 'row-deleted' : ''} hover:bg-brand-cream/50 transition-colors border-b border-brand-light">
       <td class="px-4 py-3"><input type="checkbox" ${row._selected && !row._deleted ? 'checked' : ''} ${row._deleted ? 'disabled' : ''} onchange="toggleRow(${row._id},this.checked)" class="rounded"></td>
@@ -406,7 +407,7 @@ function renderReviewTable() {
       <td class="px-4 py-3 font-poppins font-semibold text-brand-dark">€${Number(row.amount).toFixed(2)}</td>
       <td class="px-4 py-3">
         <select onchange="changeRowCat(${row._id},this.value)" class="px-2 py-1 bg-brand-cream border border-brand-light rounded-lg text-[13px] outline-none focus:ring-1 focus:ring-brand-orange" ${row._deleted ? 'disabled' : ''}>
-          ${CAT_NAMES.map(c => `<option value="${c}" ${c === row.category ? 'selected' : ''}>${c}</option>`).join('')}
+          ${currentCats.map(c => `<option value="${c}" ${c === row.category ? 'selected' : ''}>${c}</option>`).join('')}
         </select>
       </td>
       <td class="px-4 py-3">
@@ -473,6 +474,15 @@ window.importSelected = async () => {
 // =============================================
 function updateUI() {
   const ctxExpenses = expenses.filter(e => e.context === window.currentContext || (!e.context && window.currentContext === 'personal')); // fallback old rows to personal
+  
+  // Update Add/Edit Form Categories to match current context
+  const currentCats = getContextCats('expense').concat(getContextCats('income'));
+  const catOptions = currentCats.map(c => `<option value="${c}">${c}</option>`).join('');
+  const catSelect = document.getElementById('category');
+  if (catSelect && catSelect.innerHTML !== catOptions) catSelect.innerHTML = catOptions;
+  const editCatSelect = document.getElementById('edit-category');
+  if (editCatSelect && editCatSelect.innerHTML !== catOptions) editCatSelect.innerHTML = catOptions;
+
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
@@ -635,6 +645,33 @@ function updateCharts() {
   // Update budget bars after charts
   renderBudgetBars();
 }
+
+// =============================================
+// CONTEXT (Personal / Business)
+// =============================================
+window.switchContext = ctx => {
+  window.currentContext = ctx;
+  const isBiz = ctx === 'business';
+  
+  // Update toggle buttons look
+  const btnPers = document.getElementById('ctx-btn-personal');
+  const btnBiz = document.getElementById('ctx-btn-business');
+  
+  if (isBiz) {
+    btnBiz.className = 'px-4 py-1.5 rounded-lg text-[13px] font-poppins font-bold bg-white text-brand-dark shadow-sm transition-all focus:outline-none';
+    btnPers.className = 'px-4 py-1.5 rounded-lg text-[13px] font-poppins font-semibold text-brand-medium hover:text-brand-dark transition-all focus:outline-none';
+    document.getElementById('brand-icon-bg').className = 'p-1.5 bg-blue-700 rounded-lg transition-colors';
+    document.getElementById('brand-title').innerHTML = 'Italy <span class="text-blue-700">On Demand</span>';
+  } else {
+    btnPers.className = 'px-4 py-1.5 rounded-lg text-[13px] font-poppins font-bold bg-white text-brand-dark shadow-sm transition-all focus:outline-none';
+    btnBiz.className = 'px-4 py-1.5 rounded-lg text-[13px] font-poppins font-semibold text-brand-medium hover:text-brand-dark transition-all focus:outline-none';
+    document.getElementById('brand-icon-bg').className = 'p-1.5 bg-brand-green rounded-lg transition-colors';
+    document.getElementById('brand-title').innerText = 'SpendWise';
+  }
+  
+  // Re-render UI relying on the currentContext filter in updateUI()
+  updateUI();
+};
 
 // =============================================
 // TABS
