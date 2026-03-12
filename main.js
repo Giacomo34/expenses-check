@@ -12,36 +12,62 @@ const AI_GATEWAY_MODEL = import.meta.env.VITE_AI_MODEL || 'google/gemini-2.0-fla
 // CATEGORY CONFIG
 // =============================================
 const CATEGORIES = {
-  // ---- EXPENSES ----
-  'Food & Dining':    { icon: 'utensils',       color: 'text-brand-orange', bg: 'bg-orange-50',   chart: '#E8730F', type: 'expense' },
-  'Transport':        { icon: 'car',             color: 'text-brand-medium', bg: 'bg-slate-50',    chart: '#4a5f7f', type: 'expense' },
-  'Bills & Utilities':{ icon: 'zap',             color: 'text-brand-dark',   bg: 'bg-gray-50',     chart: '#1a2332', type: 'expense' },
-  'Shopping':         { icon: 'shopping-bag',    color: 'text-emerald-700',  bg: 'bg-green-50',    chart: '#059669', type: 'expense' },
-  'Entertainment':    { icon: 'clapperboard',    color: 'text-brand-red',    bg: 'bg-red-50',      chart: '#cc2f2f', type: 'expense' },
-  'Health':           { icon: 'heart-pulse',     color: 'text-pink-600',     bg: 'bg-pink-50',     chart: '#db2777', type: 'expense' },
-  'Travel':           { icon: 'plane',           color: 'text-blue-600',     bg: 'bg-blue-50',     chart: '#2563eb', type: 'expense' },
-  'Education':        { icon: 'book-open',       color: 'text-indigo-600',   bg: 'bg-indigo-50',   chart: '#4f46e5', type: 'expense' },
-  'Subscriptions':    { icon: 'repeat',          color: 'text-purple-600',   bg: 'bg-purple-50',   chart: '#9333ea', type: 'expense' },
-  'Other':            { icon: 'package',         color: 'text-brand-medium', bg: 'bg-brand-cream', chart: '#E0E0E0', type: 'expense' },
-  // ---- INCOME ----
-  'Salary':           { icon: 'banknote',        color: 'text-brand-green',  bg: 'bg-green-100',   chart: '#0d5d1a', type: 'income' },
-  'Freelance':        { icon: 'briefcase',       color: 'text-teal-600',     bg: 'bg-teal-50',     chart: '#0d9488', type: 'income' },
-  'Investments':      { icon: 'trending-up',     color: 'text-cyan-600',     bg: 'bg-cyan-50',     chart: '#0891b2', type: 'income' },
-  'Refund':           { icon: 'rotate-ccw',      color: 'text-lime-600',     bg: 'bg-lime-50',     chart: '#65a30d', type: 'income' },
-  'Other Income':     { icon: 'circle-dollar-sign', color: 'text-green-600', bg: 'bg-green-50',    chart: '#16a34a', type: 'income' },
+  // ---- PERSONAL EXPENSES ----
+  'Food & Dining':    { icon: 'utensils',       color: 'text-brand-orange', bg: 'bg-orange-50',   chart: '#E8730F', type: 'expense', ctx: 'personal' },
+  'Transport':        { icon: 'car',             color: 'text-brand-medium', bg: 'bg-slate-50',    chart: '#4a5f7f', type: 'expense', ctx: 'personal' },
+  'Bills & Utilities':{ icon: 'zap',             color: 'text-brand-dark',   bg: 'bg-gray-50',     chart: '#1a2332', type: 'expense', ctx: 'personal' },
+  'Shopping':         { icon: 'shopping-bag',    color: 'text-emerald-700',  bg: 'bg-green-50',    chart: '#059669', type: 'expense', ctx: 'personal' },
+  'Entertainment':    { icon: 'clapperboard',    color: 'text-brand-red',    bg: 'bg-red-50',      chart: '#cc2f2f', type: 'expense', ctx: 'personal' },
+  'Health':           { icon: 'heart-pulse',     color: 'text-pink-600',     bg: 'bg-pink-50',     chart: '#db2777', type: 'expense', ctx: 'personal' },
+  'Travel':           { icon: 'plane',           color: 'text-blue-600',     bg: 'bg-blue-50',     chart: '#2563eb', type: 'expense', ctx: 'personal' },
+  'Education':        { icon: 'book-open',       color: 'text-indigo-600',   bg: 'bg-indigo-50',   chart: '#4f46e5', type: 'expense', ctx: 'personal' },
+  'Subscriptions':    { icon: 'repeat',          color: 'text-purple-600',   bg: 'bg-purple-50',   chart: '#9333ea', type: 'expense', ctx: 'personal' },
+  'Other Personal':   { icon: 'package',         color: 'text-brand-medium', bg: 'bg-brand-cream', chart: '#E0E0E0', type: 'expense', ctx: 'personal' },
+  
+  // ---- PERSONAL INCOME ----
+  'Salary':           { icon: 'banknote',        color: 'text-brand-green',  bg: 'bg-green-100',   chart: '#0d5d1a', type: 'income', ctx: 'personal' },
+  'Freelance':        { icon: 'briefcase',       color: 'text-teal-600',     bg: 'bg-teal-50',     chart: '#0d9488', type: 'income', ctx: 'personal' },
+  'Investments':      { icon: 'trending-up',     color: 'text-cyan-600',     bg: 'bg-cyan-50',     chart: '#0891b2', type: 'income', ctx: 'personal' },
+  'Refund':           { icon: 'rotate-ccw',      color: 'text-lime-600',     bg: 'bg-lime-50',     chart: '#65a30d', type: 'income', ctx: 'personal' },
+  'Other Income':     { icon: 'circle-dollar-sign', color: 'text-green-600', bg: 'bg-green-50',    chart: '#16a34a', type: 'income', ctx: 'personal' },
+
+  // ---- BUSINESS EXPENSES (Italy On Demand) ----
+  'Biz Projects Cost':{ icon: 'briefcase',       color: 'text-blue-800',     bg: 'bg-blue-100',    chart: '#1e40af', type: 'expense', ctx: 'business' },
+  'Catering Cost':    { icon: 'coffee',          color: 'text-yellow-700',   bg: 'bg-yellow-100',  chart: '#a16207', type: 'expense', ctx: 'business' },
+  'Photoshoot Cost':  { icon: 'camera',          color: 'text-brand-orange', bg: 'bg-orange-100',  chart: '#ea580c', type: 'expense', ctx: 'business' },
+  'App Dev & Server': { icon: 'terminal',        color: 'text-slate-700',    bg: 'bg-slate-200',   chart: '#334155', type: 'expense', ctx: 'business' },
+  'Event Setup':      { icon: 'party-popper',    color: 'text-pink-700',     bg: 'bg-pink-100',    chart: '#be185d', type: 'expense', ctx: 'business' },
+  'Design Assets':    { icon: 'pen-tool',        color: 'text-purple-700',   bg: 'bg-purple-100',  chart: '#7e22ce', type: 'expense', ctx: 'business' },
+  'Marketing':        { icon: 'megaphone',       color: 'text-brand-red',    bg: 'bg-red-100',     chart: '#b91c1c', type: 'expense', ctx: 'business' },
+  'Biz Travel':       { icon: 'plane-takeoff',   color: 'text-cyan-700',     bg: 'bg-cyan-100',    chart: '#0e7490', type: 'expense', ctx: 'business' },
+  'Other Biz Cost':   { icon: 'box',             color: 'text-brand-medium', bg: 'bg-gray-200',    chart: '#9ca3af', type: 'expense', ctx: 'business' },
+
+  // ---- BUSINESS INCOME (Italy On Demand) ----
+  'Biz Projects Rev': { icon: 'folder-check',    color: 'text-blue-600',     bg: 'bg-blue-50',     chart: '#2563eb', type: 'income', ctx: 'business' },
+  'Catering Rev':     { icon: 'pie-chart',       color: 'text-yellow-600',   bg: 'bg-yellow-50',   chart: '#ca8a04', type: 'income', ctx: 'business' },
+  'Photoshoot Rev':   { icon: 'image',           color: 'text-orange-500',   bg: 'bg-orange-50',   chart: '#f97316', type: 'income', ctx: 'business' },
+  'App Rev':          { icon: 'smartphone',      color: 'text-slate-600',    bg: 'bg-slate-50',    chart: '#475569', type: 'income', ctx: 'business' },
+  'Event Rev':        { icon: 'ticket',          color: 'text-pink-600',     bg: 'bg-pink-50',     chart: '#db2777', type: 'income', ctx: 'business' },
+  'Design Rev':       { icon: 'palette',         color: 'text-purple-600',   bg: 'bg-purple-50',   chart: '#9333ea', type: 'income', ctx: 'business' },
+  'Consulting':       { icon: 'messages-square', color: 'text-teal-600',     bg: 'bg-teal-50',     chart: '#0d9488', type: 'income', ctx: 'business' },
+  'Other Biz Rev':    { icon: 'coins',           color: 'text-brand-green',  bg: 'bg-green-50',    chart: '#16a34a', type: 'income', ctx: 'business' },
 };
 const CAT_NAMES = Object.keys(CATEGORIES);
 const INCOME_CATS = CAT_NAMES.filter(c => CATEGORIES[c].type === 'income');
 const EXPENSE_CATS = CAT_NAMES.filter(c => CATEGORIES[c].type === 'expense');
 const isIncome = cat => CATEGORIES[cat]?.type === 'income';
 
+// Context helper
+const getContextCats = (type) => CAT_NAMES.filter(c => CATEGORIES[c].type === type && CATEGORIES[c].ctx === window.currentContext);
+
 // =============================================
 // STATE
 // =============================================
 let supabase = null;
 let currentUser = null;
-let expenses = [];
+let expenses = []; // This will hold everything
 let currentTab = 'today';
+window.currentContext = 'personal'; // 'personal' or 'business'
 let categoryChart = null;
 let weeklyChart = null;
 let pendingRows = [];
@@ -169,6 +195,7 @@ document.getElementById('expense-form').addEventListener('submit', async e => {
     date: document.getElementById('date').value,
     description: document.getElementById('description').value,
     source: 'manual',
+    context: window.currentContext,
   };
   const { data, error } = await supabase.from('expenses').insert([newExp]).select();
   btn.innerHTML = '<i data-lucide="save" class="w-5 h-5"></i> Save Expense';
@@ -429,6 +456,7 @@ window.importSelected = async () => {
     date: r.date,
     description: r.description,
     source: 'statement',
+    context: window.currentContext,
   }));
   const { data, error } = await supabase.from('expenses').insert(rows).select();
   btn.innerHTML = '<i data-lucide="download" class="w-4 h-4"></i> Import Selected';
@@ -444,6 +472,7 @@ window.importSelected = async () => {
 // UI RENDERING
 // =============================================
 function updateUI() {
+  const ctxExpenses = expenses.filter(e => e.context === window.currentContext || (!e.context && window.currentContext === 'personal')); // fallback old rows to personal
   const now = new Date();
   const todayStr = now.toISOString().split('T')[0];
   const startOfWeek = new Date(now); startOfWeek.setDate(now.getDate() - now.getDay());
@@ -451,9 +480,9 @@ function updateUI() {
   const sumExp = arr => arr.reduce((s, e) => !isIncome(e.category) ? s + Number(e.amount) : s, 0);
   const net = arr => arr.reduce((s, e) => isIncome(e.category) ? s + Number(e.amount) : s - Number(e.amount), 0);
   const fmtNet = v => (v >= 0 ? '+' : '-') + fmt(Math.abs(v));
-  const todayArr = expenses.filter(e => e.date === todayStr);
-  const weekArr = expenses.filter(e => new Date(e.date) >= startOfWeek);
-  const monthArr = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+  const todayArr = ctxExpenses.filter(e => e.date === todayStr);
+  const weekArr = ctxExpenses.filter(e => new Date(e.date) >= startOfWeek);
+  const monthArr = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
   const netToday = net(todayArr); const spentToday = sumExp(todayArr);
   const netWeek  = net(weekArr);  const spentWeek  = sumExp(weekArr);
   const netMonth = net(monthArr); const spentMonth = sumExp(monthArr);
@@ -529,16 +558,18 @@ function renderList() {
 }
 
 function updateCharts() {
+  const ctxExpenses = expenses.filter(e => e.context === window.currentContext || (!e.context && window.currentContext === 'personal'));
   const now = new Date();
   Chart.defaults.font.family = "'Lato', sans-serif";
   Chart.defaults.color = brandColors.medium;
   const tooltipBase = { backgroundColor: 'rgba(26,35,50,0.95)', titleFont: { family: "'Poppins',sans-serif", size: 13, weight: 'bold' }, bodyFont: { family: "'Lato',sans-serif", size: 13 }, padding: 10, cornerRadius: 8 };
 
   // --- Doughnut: monthly expense categories ---
-  const monthExp = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && !isIncome(e.category); });
-  const catData = EXPENSE_CATS.map(c => monthExp.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0));
-  const chartColors = EXPENSE_CATS.map(c => CATEGORIES[c].chart);
-  document.getElementById('category-legend').innerHTML = EXPENSE_CATS.map((c, i) => {
+  const currentExpCats = getContextCats('expense');
+  const monthExp = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && !isIncome(e.category); });
+  const catData = currentExpCats.map(c => monthExp.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0));
+  const chartColors = currentExpCats.map(c => CATEGORIES[c].chart);
+  document.getElementById('category-legend').innerHTML = currentExpCats.map((c, i) => {
     const ci = CATEGORIES[c];
     return `<div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
@@ -551,13 +582,13 @@ function updateCharts() {
   if (categoryChart) categoryChart.destroy();
   categoryChart = new Chart(document.getElementById('categoryChart').getContext('2d'), {
     type: 'doughnut',
-    data: { labels: EXPENSE_CATS, datasets: [{ data: catData, backgroundColor: chartColors, borderWidth: 2, borderColor: brandColors.cream, hoverOffset: 10 }] },
+    data: { labels: currentExpCats, datasets: [{ data: catData, backgroundColor: chartColors, borderWidth: 2, borderColor: brandColors.cream, hoverOffset: 10 }] },
     options: { plugins: { legend: { display: false }, tooltip: { ...tooltipBase, callbacks: { label: ctx => ` ${ctx.label}: ${fmt(ctx.parsed)}` } } }, cutout: '70%', animation: { animateScale: true, animateRotate: true } }
   });
 
   // --- Weekly spending bar ---
   const last7 = [...Array(7)].map((_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d.toISOString().split('T')[0]; }).reverse();
-  const wkExpData = last7.map(d => expenses.filter(e => e.date === d && !isIncome(e.category)).reduce((s, e) => s + Number(e.amount), 0));
+  const wkExpData = last7.map(d => ctxExpenses.filter(e => e.date === d && !isIncome(e.category)).reduce((s, e) => s + Number(e.amount), 0));
   if (weeklyChart) weeklyChart.destroy();
   weeklyChart = new Chart(document.getElementById('weeklyChart').getContext('2d'), {
     type: 'bar',
@@ -570,8 +601,8 @@ function updateCharts() {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     return { year: d.getFullYear(), month: d.getMonth(), label: d.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) };
   }).reverse();
-  const ieIncomeData = last6Months.map(m => expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0));
-  const ieExpData = last6Months.map(m => expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && !isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0));
+  const ieIncomeData = last6Months.map(m => ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0));
+  const ieExpData = last6Months.map(m => ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && !isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0));
   if (window._ieChart) window._ieChart.destroy();
   window._ieChart = new Chart(document.getElementById('incomeExpenseChart').getContext('2d'), {
     type: 'bar',
@@ -587,8 +618,8 @@ function updateCharts() {
 
   // --- 6-month net balance line ---
   const balData = last6Months.map(m => {
-    const inc = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0);
-    const exp = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && !isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0);
+    const inc = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0);
+    const exp = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === m.month && d.getFullYear() === m.year && !isIncome(e.category); }).reduce((s, e) => s + Number(e.amount), 0);
     return inc - exp;
   });
   if (window._balChart) window._balChart.destroy();
@@ -649,7 +680,8 @@ window.openBudget = () => {
   document.getElementById('budget-weekly').value = b.weekly || '';
   document.getElementById('budget-monthly').value = b.monthly || '';
   // Build per-category inputs
-  document.getElementById('cat-budget-inputs').innerHTML = EXPENSE_CATS.map(c => {
+  const currentExpCats = getContextCats('expense');
+  document.getElementById('cat-budget-inputs').innerHTML = currentExpCats.map(c => {
     const id = `budget-cat-${c.replace(/[^a-z0-9]/gi,'_')}`;
     const ci = CATEGORIES[c];
     return `<div class="flex items-center gap-3">
@@ -665,27 +697,32 @@ window.openBudget = () => {
 };
 function renderBudgetBars() {
   const b = loadBudget();
+  const ctxExpenses = expenses.filter(e => e.context === window.currentContext || (!e.context && window.currentContext === 'personal'));
   const now = new Date();
-  const monthExpenses = expenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && !isIncome(e.category); });
+  const monthExpenses = ctxExpenses.filter(e => { const d = new Date(e.date); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear() && !isIncome(e.category); });
   const totalSpent = monthExpenses.reduce((s, e) => s + Number(e.amount), 0);
   const section = document.getElementById('budget-section');
   const bars = document.getElementById('budget-bars');
-  const hasAny = b._total || EXPENSE_CATS.some(c => b[c]);
+  
+  const currentExpCats = getContextCats('expense');
+  
+  // Notice we must check if there is a general budget or if any category in the Current Context has a budget
+  const hasAny = b.monthly || currentExpCats.some(c => b[c]);
   if (!hasAny) { section.classList.add('hidden'); return; }
   section.classList.remove('hidden');
   let html = '';
-  if (b._total) {
-    const pct = Math.min(100, (totalSpent / b._total) * 100);
-    const over = totalSpent > b._total;
+  if (b.monthly) {
+    const pct = Math.min(100, (totalSpent / b.monthly) * 100);
+    const over = totalSpent > b.monthly;
     html += `<div>
       <div class="flex justify-between text-[13px] mb-1">
         <span class="font-poppins font-semibold text-brand-dark">Total</span>
-        <span class="${over ? 'text-brand-red font-bold' : 'text-brand-medium'}">${fmt(totalSpent)} / ${fmt(b._total)}</span>
+        <span class="${over ? 'text-brand-red font-bold' : 'text-brand-medium'}">${fmt(totalSpent)} / ${fmt(b.monthly)}</span>
       </div>
       <div class="progress-bar"><div class="progress-fill ${over ? 'bg-brand-red' : 'bg-brand-green'}" style="width:${pct}%"></div></div>
     </div>`;
   }
-  EXPENSE_CATS.forEach(c => {
+  currentExpCats.forEach(c => {
     if (!b[c]) return;
     const spent = monthExpenses.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount), 0);
     const pct = Math.min(100, (spent / b[c]) * 100);
